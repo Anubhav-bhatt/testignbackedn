@@ -29,9 +29,8 @@ export default function PriorityCases({ cases }: Props) {
 
   const openCaseDetails = (item: PriorityCase) => {
     router.push({
-      pathname: "/case-details",
+      pathname: "/cases/case-details", // ✅ EXACT ROUTE
       params: {
-        id: String(item.id),
         title: item.title,
         client: item.client,
         hearingDate: item.hearingDate,
@@ -49,7 +48,7 @@ export default function PriorityCases({ cases }: Props) {
         </View>
       </View>
 
-      {/* PRIMARY CASE (SINGLE PRESSABLE) */}
+      {/* PRIMARY CASE */}
       {primaryCase && (
         <Pressable
           onPress={() => openCaseDetails(primaryCase)}
@@ -58,10 +57,9 @@ export default function PriorityCases({ cases }: Props) {
             pressed && styles.pressed,
           ]}
         >
-          {/* TOP */}
           <View style={styles.topRow}>
             <View style={styles.caseTypePill}>
-              <Text style={styles.caseTypeText}>PROPERTY DISPUTE</Text>
+              <Text style={styles.caseTypeText}>PRIORITY</Text>
             </View>
 
             <View style={styles.urgentPill}>
@@ -70,19 +68,15 @@ export default function PriorityCases({ cases }: Props) {
             </View>
           </View>
 
-          {/* TITLE */}
           <Text style={styles.caseTitle}>{primaryCase.title}</Text>
 
-          {/* CLIENT */}
           <View style={styles.clientRow}>
             <Ionicons name="person-outline" size={14} color="#475569" />
             <Text style={styles.client}>{primaryCase.client}</Text>
           </View>
 
-          {/* DIVIDER */}
           <View style={styles.divider} />
 
-          {/* FOOTER */}
           <View style={styles.footerRow}>
             <View style={styles.hearingInfo}>
               <Ionicons
@@ -168,7 +162,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingLeft: 8,
   },
-
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -191,7 +184,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-
   focusCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
@@ -199,13 +191,11 @@ const styles = StyleSheet.create({
     elevation: 6,
     marginBottom: 14,
   },
-
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 10,
   },
-
   caseTypePill: {
     backgroundColor: "#E0E7FF",
     paddingHorizontal: 10,
@@ -217,7 +207,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1E3A8A",
   },
-
   urgentPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -232,13 +221,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
   },
-
   caseTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 6,
   },
-
   clientRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -248,19 +235,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
   },
-
   divider: {
     height: 1,
     backgroundColor: "#E2E8F0",
     marginVertical: 14,
   },
-
   footerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   hearingInfo: {
     flexDirection: "row",
     alignItems: "center",
@@ -275,7 +259,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#B91C1C",
   },
-
   dropdownButton: {
     backgroundColor: "#F1F5F9",
     borderRadius: 16,
@@ -285,24 +268,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-
   dropdownContent: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   dropdownLabel: {
     fontSize: 14,
     fontWeight: "600",
   },
-
   dropdownSubtext: {
     fontSize: 12,
     color: "#64748B",
     marginTop: 2,
   },
-
   secondaryCard: {
     backgroundColor: "#F8FAFC",
     borderRadius: 14,
@@ -311,18 +290,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
-
   secondaryTitle: {
     fontSize: 14,
     fontWeight: "500",
   },
-
   secondaryDate: {
     marginTop: 6,
     fontSize: 12,
     color: "#64748B",
   },
-
   pressed: {
     opacity: 0.85,
   },

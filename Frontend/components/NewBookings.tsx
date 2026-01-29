@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
+import { useRouter } from "expo-router";
 
 /* Enable layout animation on Android */
 if (Platform.OS === "android") {
@@ -28,6 +29,7 @@ interface Props {
 
 export default function NewBookings({ requests }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const router = useRouter();
 
   if (!requests.length) return null;
 
@@ -38,16 +40,9 @@ export default function NewBookings({ requests }: Props) {
 
   return (
     <View style={styles.wrapper}>
-      {/* FLOATING CONTAINER */}
       <View style={styles.floatingCard}>
-        {/* HEADER / COLLAPSE TOGGLE */}
-        <Pressable
-          onPress={toggle}
-          style={({ pressed }) => [
-            styles.header,
-            pressed && styles.pressed,
-          ]}
-        >
+        {/* HEADER */}
+        <Pressable onPress={toggle} style={styles.header}>
           <View style={styles.headerLeft}>
             <Ionicons
               name="notifications-outline"
@@ -74,57 +69,41 @@ export default function NewBookings({ requests }: Props) {
           </View>
         </Pressable>
 
-        {/* EXPANDED CONTENT */}
+        {/* BOOKINGS LIST */}
         {expanded && (
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
             {requests.map((item, index) => (
-              <View
+              <Pressable
                 key={item.id}
-                style={[
+                onPress={() =>
+                  router.push({
+                    pathname: "/bookings/booking-details",
+                    params: {
+                      client: item.client,
+                      caseType: item.caseType,
+                    },
+                  })
+                }
+                style={({ pressed }) => [
                   styles.row,
                   index !== requests.length - 1 && styles.divider,
+                  pressed && styles.pressed,
                 ]}
               >
-                {/* INFO */}
                 <View style={styles.info}>
                   <Text style={styles.client}>{item.client}</Text>
                   <Text style={styles.caseType}>{item.caseType}</Text>
                 </View>
 
-                {/* ACTIONS */}
-                <View style={styles.actions}>
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.actionBtn,
-                      styles.accept,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Ionicons
-                      name="checkmark"
-                      size={18}
-                      color="#16A34A"
-                    />
-                  </Pressable>
-
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.actionBtn,
-                      styles.reject,
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Ionicons
-                      name="close"
-                      size={18}
-                      color="#DC2626"
-                    />
-                  </Pressable>
-                </View>
-              </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color="#94A3B8"
+                />
+              </Pressable>
             ))}
           </ScrollView>
         )}
@@ -132,8 +111,11 @@ export default function NewBookings({ requests }: Props) {
     </View>
   );
 }
+
+/* =====================
+   STYLES
+===================== */
 const styles = StyleSheet.create({
-  /* FLOATING POSITION */
   wrapper: {
     marginTop: 28,
     paddingHorizontal: 12,
@@ -143,16 +125,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 22,
     overflow: "hidden",
-
-    /* FLOATING DEPTH */
     elevation: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
   },
 
-  /* HEADER */
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -199,9 +174,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  /* EXPANDED CONTENT */
   scrollContent: {
-    maxHeight: 220, // ⬅️ notification stack height
+    maxHeight: 220,
   },
 
   row: {
@@ -219,7 +193,6 @@ const styles = StyleSheet.create({
 
   info: {
     flex: 1,
-    marginRight: 10,
   },
 
   client: {
@@ -234,28 +207,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-
-  actionBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  accept: {
-    backgroundColor: "#DCFCE7",
-  },
-
-  reject: {
-    backgroundColor: "#FEE2E2",
-  },
-
   pressed: {
-    opacity: 0.65,
+    opacity: 0.6,
   },
 });

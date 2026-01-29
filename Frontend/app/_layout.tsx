@@ -8,6 +8,7 @@ export default function Layout() {
       <Stack.Screen name="cases/index" />
       <Stack.Screen name="cases/case-details" />
       <Stack.Screen name="calendar" />
+      <Stack.Screen name="bookings/booking-details" />
     </Stack>
   );
 }
