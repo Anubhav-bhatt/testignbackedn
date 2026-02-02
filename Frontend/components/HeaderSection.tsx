@@ -1,96 +1,97 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 interface Props {
   lawyerName: string;
 }
 
-function getGreeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
-}
+export default function HeaderSection({ lawyerName }: Props) {
+  const hours = new Date().getHours();
+  const greeting =
+    hours < 12
+      ? "Good Morning"
+      : hours < 17
+      ? "Good Afternoon"
+      : "Good Evening";
 
-function getFormattedDate() {
-  return new Date().toLocaleDateString("en-IN", {
+  const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
   });
-}
 
-export default function HeaderSection({ lawyerName }: Props) {
   return (
-    <View style={styles.container}>
-      {/* LEFT CONTENT */}
-      <View>
-        <View style={styles.greetingPill}>
-          <Text style={styles.greetingText}>{getGreeting()}</Text>
-        </View>
-
+    <View style={styles.wrapper}>
+      {/* LEFT TEXT BLOCK */}
+      <View style={styles.textBlock}>
+        <Text style={styles.greeting}>{greeting}</Text>
         <Text style={styles.name}>{lawyerName}</Text>
-        <Text style={styles.date}>{getFormattedDate()}</Text>
+        <Text style={styles.date}>{today}</Text>
       </View>
 
-      {/* AVATAR */}
-      <View style={styles.avatar}>
-        <Ionicons name="person" size={20} color="#1E3A8A" />
-      </View>
+      {/* RIGHT AVATAR (INTERACTIVE) */}
+      <Pressable
+        style={({ pressed }) => [
+          styles.avatar,
+          pressed && styles.avatarPressed,
+        ]}
+      >
+        <Ionicons name="person-outline" size={22} color="#1E3A8A" />
+      </Pressable>
     </View>
   );
 }
+
+/* =====================
+   STYLES
+===================== */
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 12, // ⬅️ REDUCED (was 28)
-    paddingHorizontal: 4,
+  wrapper: {
     flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    alignItems: "flex-start",
+    paddingVertical: 8,
+    marginBottom: 24,
   },
 
-  greetingPill: {
-    alignSelf: "flex-start",
-    backgroundColor: "#EEF2FF",
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-
-    marginBottom: 4,
+  textBlock: {
+    flex: 1,
   },
 
-  greetingText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1E3A8A",
+  greeting: {
+    fontSize: 13,
+    color: "#64748B",
+    fontWeight: "500",
+    marginBottom: 2,
   },
 
   name: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: "#020617",
-    marginBottom: 3, // tighter
   },
 
   date: {
-    fontSize: 13,
+    fontSize: 12,
     color: "#94A3B8",
-    fontWeight: "500",
+    marginTop: 4,
   },
 
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: "#EEF2FF",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 2, // ⬅️ tighter alignment
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  avatarPressed: {
+    transform: [{ scale: 0.96 }],
+    opacity: 0.9,
   },
 });

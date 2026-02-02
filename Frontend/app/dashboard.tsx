@@ -1,28 +1,21 @@
 import { ScrollView, StyleSheet, SafeAreaView } from "react-native";
 
 import HeaderSection from "../components/HeaderSection";
-import PriorityCases, { PriorityCase } from "../components/PriorityCases";
+import PriorityCases from "../components/PriorityCases";
 import CalendarSection from "../components/CalendarSection";
-import NewBookings, { BookingRequest } from "../components/NewBookings";
+import NewBookings from "../components/NewBookings";
 import AllCasesButton from "../components/AllCasesButton";
 
-export default function Dashboard() {
-  const priorityCases: PriorityCase[] = [
-    {
-      id: 1,
-      title: "Property Dispute",
-      client: "Rohit Sharma",
-      hearingDate: "2026-01-30",
-    },
-    {
-      id: 2,
-      title: "Cheque Bounce",
-      client: "Neha Verma",
-      hearingDate: "2026-02-01",
-    },
-  ];
+import { usePriorityCases } from "./context/PriorityContext";
 
-  const bookingRequests: BookingRequest[] = [
+/* =====================
+   DASHBOARD
+===================== */
+export default function Dashboard() {
+  const { priorityCases } = usePriorityCases();
+
+  /* demo booking data (unchanged) */
+  const bookingRequests = [
     { id: 1, client: "Amit Kumar", caseType: "Divorce Case" },
     { id: 2, client: "Sneha Gupta", caseType: "Corporate Agreement" },
   ];
@@ -34,16 +27,25 @@ export default function Dashboard() {
         contentContainerStyle={styles.content}
       >
         <HeaderSection lawyerName="Anubhav" />
-        <PriorityCases cases={priorityCases} />
+
+        {/* 🔥 AUTO-POPULATED PRIORITY CASES */}
+        {priorityCases.length > 0 && (
+          <PriorityCases cases={priorityCases} />
+        )}
+
         <CalendarSection />
+
         <NewBookings requests={bookingRequests} />
+
         <AllCasesButton />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* ✅ STYLES — THIS WAS MISSING */
+/* =====================
+   STYLES
+===================== */
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -51,6 +53,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    paddingBottom: 40, // prevents last button from being cut off
+    paddingBottom: 40,
   },
 });

@@ -7,11 +7,13 @@ import {
   Pressable,
   Platform,
 } from "react-native";
+
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function CaseDetailsScreen() {
   const router = useRouter();
+
   const { title, client, hearingDate } =
     useLocalSearchParams<{
       title?: string;
@@ -24,14 +26,14 @@ export default function CaseDetailsScreen() {
       {/* TOP BAR */}
       <View style={styles.topBar}>
         <Pressable
-          onPress={() => router.push("/dashboard")}
+          onPress={() => router.back()}
           style={({ pressed }) => [
             styles.backButton,
             pressed && styles.pressed,
           ]}
         >
           <Ionicons name="arrow-back" size={20} color="#1E3A8A" />
-          <Text style={styles.backText}>Dashboard</Text>
+          <Text style={styles.backText}>Back</Text>
         </Pressable>
       </View>
 
@@ -156,7 +158,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
 
-  /* TOP BAR */
   topBar: {
     paddingHorizontal: 12,
     paddingTop: Platform.OS === "ios" ? 6 : 10,
@@ -187,7 +188,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
 
-  /* HEADER */
   headerCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 22,
@@ -232,7 +232,6 @@ const styles = StyleSheet.create({
     color: "#475569",
   },
 
-  /* SECTIONS */
   section: {
     marginBottom: 26,
   },
@@ -244,7 +243,6 @@ const styles = StyleSheet.create({
     color: "#020617",
   },
 
-  /* HEARING */
   hearingCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -268,7 +266,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  /* AI */
   aiHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -290,7 +287,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  /* ACTIONS */
   actionsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
