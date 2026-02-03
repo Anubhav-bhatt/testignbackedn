@@ -1,11 +1,16 @@
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 interface Props {
   lawyerName: string;
+  onProfilePress: () => void;
+  isProfileOpen: boolean;
 }
 
-export default function HeaderSection({ lawyerName }: Props) {
+export default function HeaderSection({
+  lawyerName,
+  onProfilePress,
+  isProfileOpen,
+}: Props) {
   const hours = new Date().getHours();
   const greeting =
     hours < 12
@@ -29,14 +34,20 @@ export default function HeaderSection({ lawyerName }: Props) {
         <Text style={styles.date}>{today}</Text>
       </View>
 
-      {/* RIGHT AVATAR (INTERACTIVE) */}
+      {/* RIGHT USER AVATAR */}
       <Pressable
+        onPress={onProfilePress}
         style={({ pressed }) => [
-          styles.avatar,
-          pressed && styles.avatarPressed,
+          styles.userButton,
+          isProfileOpen && styles.userButtonActive,
+          pressed && styles.userButtonPressed,
         ]}
       >
-        <Ionicons name="person-outline" size={22} color="#1E3A8A" />
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>
+            {lawyerName.charAt(0).toUpperCase()}
+          </Text>
+        </View>
       </Pressable>
     </View>
   );
@@ -77,21 +88,36 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
-  avatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+  /* USER BUTTON */
+  userButton: {
+    padding: 4,
+    borderRadius: 999,
     backgroundColor: "#EEF2FF",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 3,
   },
 
-  avatarPressed: {
-    transform: [{ scale: 0.96 }],
+  userButtonActive: {
+    backgroundColor: "#E0E7FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+  },
+
+  userButtonPressed: {
+    transform: [{ scale: 0.97 }],
     opacity: 0.9,
+  },
+
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#1E3A8A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  avatarText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

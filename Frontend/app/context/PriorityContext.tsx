@@ -1,36 +1,40 @@
-import React, { createContext, useContext, useState } from "react";
+import { createContext, useContext, ReactNode, useState } from "react";
 
-export interface PriorityCase {
-  id: number;
-  title: string;
-  client: string;
-  hearingDate: string;
-}
+type PriorityCase = {
+  id: string;
+};
 
-interface PriorityContextType {
+type PriorityContextType = {
   priorityCases: PriorityCase[];
-  addPriorityCase: (item: PriorityCase) => void;
-  isPriority: (id: number) => boolean;
-}
+  addPriorityCase: (c: PriorityCase) => void;
+  removePriorityCase: (id: string) => void;
+  isPriority: (id: string) => boolean;
+};
 
-const PriorityContext = createContext<PriorityContextType | null>(null);
+const PriorityContext = createContext<PriorityContextType | undefined>(
+  undefined
+);
 
-export function PriorityProvider({ children }: { children: React.ReactNode }) {
+export function PriorityProvider({ children }: { children: ReactNode }) {
   const [priorityCases, setPriorityCases] = useState<PriorityCase[]>([]);
 
-  const addPriorityCase = (item: PriorityCase) => {
-    setPriorityCases((prev) => {
-      if (prev.some((c) => c.id === item.id)) return prev;
-      return [...prev, item]; // ✅ append only
-    });
+  const addPriorityCase = (c: PriorityCase) => {
+    setPriorityCases((prev) =>
+      prev.some((p) => p.id === c.id) ? prev : [...prev, c]
+    );
   };
 
-  const isPriority = (id: number) =>
-    priorityCases.some((c) => c.id === id);
+  const removePriorityCase = (id: string) => {
+    setPriorityCases((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const isPriority = (id: string) => {
+    return priorityCases.some((p) => p.id === id);
+  };
 
   return (
     <PriorityContext.Provider
-      value={{ priorityCases, addPriorityCase, isPriority }}
+      value={{ priorityCases, addPriorityCase, removePriorityCase, isPriority }}
     >
       {children}
     </PriorityContext.Provider>
