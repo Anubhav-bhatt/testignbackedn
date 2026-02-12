@@ -1,16 +1,15 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from "react-native";
-import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { usePriorityCases } from "../app/context/PriorityContext";
+import { useState } from "react";
+import {
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View
+} from "react-native";
 
 if (Platform.OS === "android") {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -20,43 +19,44 @@ if (Platform.OS === "android") {
    TYPES
 ===================== */
 type CaseItem = {
-  id: number;
+  id: string | number;
   title: string;
   client: string;
   caseDate: string;
   category: string;
   court: string;
   nextHearing: string;
-  moneyPending: string;
-  moneyReceived: string;
+  stage: string;
+  courtRoom: string;
+  documentCount?: number;
+  moneyPending?: string;
+  moneyReceived?: string;
 };
 
 /* =====================
    COMPONENT
 ===================== */
+import { useTheme } from "../app/context/ThemeContext";
+
 export default function CaseFullCard({
   caseItem,
 }: {
   caseItem: CaseItem;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [justPrioritised, setJustPrioritised] = useState(false);
-
   const router = useRouter();
-  const { addPriorityCase, isPriority } = usePriorityCases();
+  const { colors, theme } = useTheme();
 
-  const alreadyPriority = isPriority(caseItem.id);
-
-  const toggle = () => {
-    LayoutAnimation.configureNext(
-      LayoutAnimation.Presets.easeInEaseOut
-    );
-    setExpanded((prev) => !prev);
+  const openSummary = () => {
+    router.push({
+      pathname: "/cases/summary",
+      params: { id: caseItem.id }
+    });
   };
 
   const openAI = () => {
     router.push({
-      pathname: "/cases/ai",
+      pathname: "/ai",
       params: {
         caseId: caseItem.id,
         title: caseItem.title,
@@ -65,34 +65,26 @@ export default function CaseFullCard({
     });
   };
 
-  const markAsPriority = () => {
-    if (alreadyPriority) return;
-
-    addPriorityCase({
-      id: caseItem.id,
-      title: caseItem.title,
-      client: caseItem.client,
-      hearingDate: caseItem.nextHearing,
-      reason: "Referral",
-    });
-
-    // ✅ UI feedback only
-    setJustPrioritised(true);
-  };
-
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme === 'dark' ? colors.surface : '#FFFFFF', shadowColor: theme === 'dark' ? "#000" : "#000" }]}>
       {/* =====================
           PRIMARY ROW
       ====================== */}
-      <Pressable onPress={toggle} style={styles.primaryRow}>
+      <Pressable onPress={openSummary} style={styles.primaryRow}>
         <View style={styles.leftBlock}>
-          <Text style={styles.clientName} numberOfLines={1}>
-            {caseItem.client}
-          </Text>
+          <View style={styles.clientRow}>
+            <Text style={[styles.clientName, { color: colors.text }]} numberOfLines={1}>
+              {caseItem.client}
+            </Text>
+            <View style={[styles.typeBadge, { backgroundColor: caseItem.category === 'Criminal' ? '#FEF2F2' : '#F0F9FF', borderColor: caseItem.category === 'Criminal' ? '#FECACA' : '#BAE6FD' }]}>
+              <Text style={[styles.typeBadgeText, { color: caseItem.category === 'Criminal' ? '#DC2626' : '#0369A1' }]}>
+                {caseItem.category.toUpperCase()}
+              </Text>
+            </View>
+          </View>
 
-          <Text style={styles.meta} numberOfLines={1}>
-            {caseItem.caseDate} • {caseItem.category} • {caseItem.court}
+          <Text style={[styles.meta, { color: colors.textSecondary }]} numberOfLines={1}>
+            {caseItem.caseDate} • {caseItem.court}
           </Text>
         </View>
 
@@ -103,17 +95,20 @@ export default function CaseFullCard({
             style={({ pressed }) => [
               styles.aiChip,
               pressed && styles.aiPressed,
+              { backgroundColor: theme === 'dark' ? colors.primary + '20' : '#EEF2FF' }
             ]}
           >
-            <Ionicons name="sparkles" size={14} color="#4338CA" />
-            <Text style={styles.aiText}>AI</Text>
+            <Ionicons name="sparkles" size={14} color={colors.primary} />
+            <Text style={[styles.aiText, { color: colors.primary }]}>AI</Text>
           </Pressable>
 
-          <Ionicons
-            name={expanded ? "chevron-up" : "chevron-down"}
-            size={20}
-            color="#475569"
-          />
+          <TouchableOpacity onPress={() => setExpanded(!expanded)} hitSlop={10}>
+            <Ionicons
+              name={expanded ? "chevron-up" : "chevron-down"}
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
         </View>
       </Pressable>
 
@@ -121,12 +116,11 @@ export default function CaseFullCard({
           DROPDOWN
       ====================== */}
       {expanded && (
-        <View style={styles.dropdown}>
+        <View style={[styles.dropdown, { backgroundColor: theme === 'dark' ? colors.background : '#F8FAFC' }]}>
           <TwoColItem
-            icon="alert-circle-outline"
-            label="Money Pending"
-            value={`₹ ${caseItem.moneyPending}`}
-            danger
+            icon="layers-outline"
+            label="Case Stage"
+            value={caseItem.stage}
           />
           <TwoColItem
             icon="calendar-outline"
@@ -134,58 +128,27 @@ export default function CaseFullCard({
             value={caseItem.nextHearing}
           />
           <TwoColItem
-            icon="checkmark-circle-outline"
-            label="Money Received"
-            value={`₹ ${caseItem.moneyReceived}`}
-            success
+            icon="business-outline"
+            label="Court / Bench"
+            value={caseItem.courtRoom}
           />
           <TwoColItem
             icon="document-text-outline"
             label="Documents"
-            value="Submitted"
+            value={`${caseItem.documentCount ?? 0} Files`}
           />
-
-          {/* =====================
-              PRIORITY ACTION
-          ====================== */}
-          <Pressable
-            onPress={markAsPriority}
-            disabled={justPrioritised}
-            style={[
-              styles.priorityCard,
-              justPrioritised && styles.priorityDone,
-            ]}
-          >
-            <Ionicons
-              name={justPrioritised ? "checkmark-circle" : "star"}
-              size={18}
-              color={justPrioritised ? "#15803D" : "#F59E0B"}
-            />
-
-            <View>
-              <Text
-                style={[
-                  styles.priorityTitle,
-                  justPrioritised && styles.priorityTitleDone,
-                ]}
-              >
-                {justPrioritised
-                  ? "Prioritised"
-                  : "Mark as Priority"}
-              </Text>
-
-              <Text
-                style={[
-                  styles.prioritySub,
-                  justPrioritised && styles.prioritySubDone,
-                ]}
-              >
-                {justPrioritised
-                  ? "Case successfully prioritised"
-                  : "Highlight this case on dashboard"}
-              </Text>
-            </View>
-          </Pressable>
+          <TwoColItem
+            icon="cash-outline"
+            label="Pending"
+            value={`₹${caseItem.moneyPending ?? '0'}`}
+            danger={parseFloat(caseItem.moneyPending?.replace(/,/g, '') || '0') > 0}
+          />
+          <TwoColItem
+            icon="checkmark-circle-outline"
+            label="Received"
+            value={`₹${caseItem.moneyReceived ?? '0'}`}
+            success
+          />
         </View>
       )}
     </View>
@@ -208,22 +171,25 @@ function TwoColItem({
   danger?: boolean;
   success?: boolean;
 }) {
+  const { colors, theme } = useTheme();
+
   return (
-    <View style={styles.twoColItem}>
+    <View style={[styles.twoColItem, { backgroundColor: theme === 'dark' ? colors.surface : '#FFFFFF' }]}>
       <Ionicons
         name={icon}
         size={18}
         color={
-          danger ? "#B91C1C" : success ? "#15803D" : "#1E293B"
+          danger ? colors.danger : success ? colors.success : colors.textSecondary
         }
       />
       <View>
-        <Text style={styles.twoColLabel}>{label}</Text>
+        <Text style={[styles.twoColLabel, { color: colors.textSecondary }]}>{label}</Text>
         <Text
           style={[
             styles.twoColValue,
-            danger && { color: "#B91C1C" },
-            success && { color: "#15803D" },
+            { color: colors.text },
+            danger && { color: colors.danger },
+            success && { color: colors.success },
           ]}
         >
           {value}
@@ -238,7 +204,6 @@ function TwoColItem({
 ===================== */
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 18,
     marginBottom: 16,
     elevation: 4,
@@ -259,12 +224,25 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#020617",
   },
-
+  clientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  typeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  typeBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
   meta: {
     fontSize: 12,
-    color: "#64748B",
     marginTop: 2,
   },
 
@@ -280,13 +258,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "#EEF2FF",
   },
 
   aiText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#4338CA",
   },
 
   aiPressed: {
@@ -294,7 +270,6 @@ const styles = StyleSheet.create({
   },
 
   dropdown: {
-    backgroundColor: "#F8FAFC",
     padding: 16,
     flexDirection: "row",
     flexWrap: "wrap",
@@ -306,54 +281,16 @@ const styles = StyleSheet.create({
     width: "48%",
     flexDirection: "row",
     gap: 10,
-    backgroundColor: "#FFFFFF",
     padding: 12,
     borderRadius: 14,
   },
 
   twoColLabel: {
     fontSize: 11,
-    color: "#64748B",
   },
 
   twoColValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#020617",
-  },
-
-  priorityCard: {
-    width: "100%",
-    marginTop: 8,
-    backgroundColor: "#FEF3C7",
-    borderRadius: 16,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  priorityDone: {
-    backgroundColor: "#DCFCE7",
-  },
-
-  priorityTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#92400E",
-  },
-
-  priorityTitleDone: {
-    color: "#15803D",
-  },
-
-  prioritySub: {
-    fontSize: 12,
-    color: "#B45309",
-    marginTop: 2,
-  },
-
-  prioritySubDone: {
-    color: "#166534",
   },
 });

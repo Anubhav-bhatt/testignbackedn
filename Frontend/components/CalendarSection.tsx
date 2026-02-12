@@ -1,99 +1,116 @@
-import { View, Text, StyleSheet } from "react-native";
-import { Calendar } from "react-native-calendars";
 import { useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Calendar } from "react-native-calendars";
+import { useTheme } from "../app/context/ThemeContext";
 
-const caseByDate: Record<string, { name: string }> = {
-  "2026-01-29": { name: "Rohit" },
-  "2026-01-30": { name: "Neha" },
-  "2026-02-01": { name: "Amit" },
-};
 
-export default function CalendarSection() {
-  const [selectedDate, setSelectedDate] = useState("2026-01-29");
+
+import { DateData } from 'react-native-calendars';
+
+export default function CalendarSection({
+  onSelectDate,
+  onDayLongPress,
+  events = {}
+}: {
+  onSelectDate: (date: string) => void;
+  onDayLongPress?: (date: string) => void;
+  events?: Record<string, any[]>;
+}) {
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const { colors, theme } = useTheme();
+
+  const handleDayPress = (day: DateData) => {
+    setSelectedDate(day.dateString);
+    onSelectDate(day.dateString);
+  };
 
   return (
     <View style={styles.container}>
-      <View style={styles.floatingCard}>
-        <Text style={styles.title}>Case Calendar</Text>
+      <Calendar
+        onDayPress={handleDayPress}
+        hideExtraDays
+        enableSwipeMonths
+        key={theme} // Force re-render on theme change
+        dayComponent={({ date }: { date?: DateData }) => {
+          if (!date) return <View />;
 
-        <Calendar
-          onDayPress={(day) => setSelectedDate(day.dateString)}
-          hideExtraDays
-          enableSwipeMonths
-          dayComponent={({ date }) => {
-            const caseItem = caseByDate[date.dateString];
-            const isSelected = date.dateString === selectedDate;
+          const dayEvents = events[date.dateString];
+          const hasEvents = dayEvents && dayEvents.length > 0;
+          const firstEvent = hasEvents ? dayEvents[0] : null;
+          const isSelected = date.dateString === selectedDate;
 
-            return (
-              <View style={styles.dayCell}>
-                {/* FLOATING NAME (ABSOLUTE) */}
-                {caseItem && (
-                  <View style={styles.nameBubble}>
-                    <Text style={styles.nameText}>
-                      {caseItem.name}
-                    </Text>
-                  </View>
-                )}
+          return (
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => handleDayPress(date)}
+              onLongPress={() => onDayLongPress && onDayLongPress(date.dateString)}
+              style={styles.dayCell}
+            >
+              {/* FLOATING NAME (ABSOLUTE) */}
+              {firstEvent && (
+                <View style={[styles.nameBubble, { backgroundColor: theme === 'dark' ? colors.surface : '#FFFFFF', shadowColor: theme === 'dark' ? "#000" : "#000" }]}>
+                  <Text style={[styles.nameText, { color: colors.text }]} numberOfLines={1}>
+                    {firstEvent.client || firstEvent.title.split(':')[0]}
+                  </Text>
+                  {/* Tooltip Caret */}
+                  <View style={[
+                    styles.caret,
+                    { borderTopColor: theme === 'dark' ? colors.surface : '#FFFFFF' }
+                  ]} />
+                </View>
+              )}
 
-                {/* 3D PIN (ABSOLUTE) */}
-                {caseItem && (
-                  <View style={styles.pinWrapper}>
-                    <View style={styles.pinHead} />
-                    <View style={styles.pinStem} />
-                    <View style={styles.pinShadow} />
-                  </View>
-                )}
+              {/* 3D PIN */}
+              {firstEvent && (
+                <View style={styles.pinWrapper}>
+                  <View style={styles.pinHead} />
+                  <View style={styles.pinStem} />
+                  <View style={styles.pinShadow} />
+                </View>
+              )}
 
-                {/* DAY NUMBER (NORMAL FLOW) */}
-                <View
+              {/* DAY NUMBER */}
+              <View
+                style={[
+                  styles.dayCircle,
+                  isSelected && { backgroundColor: theme === 'dark' ? colors.primary + '30' : '#EEF2FF' },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.dayCircle,
-                    isSelected && styles.selectedDay,
+                    styles.dayText,
+                    { color: colors.text },
+                    isSelected && { color: colors.primary, fontWeight: '700' },
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.dayText,
-                      isSelected && styles.selectedText,
-                    ]}
-                  >
-                    {date.day}
-                  </Text>
-                </View>
+                  {date.day}
+                </Text>
               </View>
-            );
-          }}
-          theme={{
-            calendarBackground: "transparent",
-            todayTextColor: "#1E3A8A",
-          }}
-        />
-      </View>
+            </TouchableOpacity>
+          );
+        }}
+        theme={{
+          calendarBackground: "transparent",
+          todayTextColor: colors.primary,
+          arrowColor: colors.primary,
+          monthTextColor: colors.primary,
+          textMonthFontWeight: "bold",
+          dayTextColor: colors.text,
+        }}
+      />
     </View>
   );
 }
 const styles = StyleSheet.create({
   container: {
-    marginTop: 24,
-    paddingHorizontal: 8,
-  },
-
-  floatingCard: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 12,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    paddingHorizontal: 0,
+    marginBottom: 10,
   },
 
   title: {
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 8,
-    color: "#020617",
   },
 
   /* IMPORTANT: DO NOT CHANGE HEIGHT */
@@ -108,13 +125,11 @@ const styles = StyleSheet.create({
   nameBubble: {
     position: "absolute",
     top: -10, // floats upward, not expanding layout
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 6,
 
     elevation: 3,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -124,7 +139,19 @@ const styles = StyleSheet.create({
   nameText: {
     fontSize: 8,
     fontWeight: "600",
-    color: "#020617",
+  },
+  caret: {
+    position: 'absolute',
+    bottom: -4,
+    left: '50%',
+    marginLeft: -4,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderTopWidth: 4,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
 
   /* PIN (ABSOLUTE) */
@@ -172,17 +199,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  selectedDay: {
-    backgroundColor: "#EEF2FF",
-  },
-
   dayText: {
     fontSize: 13,
-    color: "#020617",
-  },
-
-  selectedText: {
-    color: "#1E3A8A",
-    fontWeight: "700",
   },
 });

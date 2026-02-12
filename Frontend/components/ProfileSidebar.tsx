@@ -1,8 +1,10 @@
-import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../app/context/ThemeContext";
 
 interface Props {
   visible: boolean;
+  profile: any;
   onClose: () => void;
   onUploadImage: () => void;
   onPersonalDetails: () => void;
@@ -11,75 +13,78 @@ interface Props {
 
 export default function ProfileSidebar({
   visible,
+  profile,
   onClose,
   onUploadImage,
   onPersonalDetails,
   onLogout,
 }: Props) {
+  const { colors, theme } = useTheme();
   if (!visible) return null;
 
   return (
     <Pressable style={styles.overlay} onPress={onClose}>
-      <View style={styles.sidebar}>
+      <View style={[styles.sidebar, { backgroundColor: theme === 'dark' ? '#1E293B' : '#FFFFFF' }]}>
         {/* ================= PROFILE ================= */}
         <View style={styles.profileBlock}>
           <Pressable style={styles.avatarWrapper} onPress={onUploadImage}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>A</Text>
-            </View>
+            {profile?.avatar ? (
+              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                <Text style={styles.avatarText}>{profile?.name ? profile.name[0] : 'A'}</Text>
+              </View>
+            )}
 
-            <View style={styles.cameraBadge}>
-              <Ionicons name="camera" size={14} color="#fff" />
+            <View style={[styles.cameraBadge, { backgroundColor: colors.background, borderColor: theme === 'dark' ? colors.border : '#FFF' }]}>
+              <Ionicons name="camera" size={14} color={colors.primary} />
             </View>
           </Pressable>
 
-          <Text style={styles.name}>Anubhav Bhatt</Text>
-          <Text style={styles.role}>Advocate • Legal-IQ</Text>
+          <Text style={[styles.name, { color: colors.text }]}>{profile?.name || "Anubhav Bhatt"}</Text>
+          <Text style={[styles.role, { color: colors.textSecondary }]}>{profile?.specialization || "Advocate • Legal-IQ"}</Text>
+          <Text style={[styles.firm, { color: colors.primary }]}>{profile?.firmName}</Text>
         </View>
 
-        <Divider />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+        {/* ================= SUMMARY STATS ================= */}
+        <View style={styles.statsRow}>
+          <StatItem label="Cases" value={profile?.summary?.totalCases || '0'} />
+          <StatItem label="Clients" value={profile?.summary?.activeClients || '0'} />
+          <StatItem label="Tasks" value={profile?.summary?.pendingTasks || '0'} />
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* ================= ACCOUNT ================= */}
-        <Section title="Account">
+        <Section title="Account" color={colors.textSecondary}>
           <Item
             icon="person-outline"
             label="Personal Details"
             onPress={onPersonalDetails}
+            textColor={colors.text}
           />
           <Item
             icon="call-outline"
             label="Contact Information"
-            onPress={() => {}}
+            onPress={() => { }}
+            textColor={colors.text}
           />
           <Item
-            icon="lock-closed-outline"
-            label="Security"
-            onPress={() => {}}
+            icon="shield-checkmark-outline"
+            label="Security & Bar ID"
+            onPress={() => { }}
+            textColor={colors.text}
           />
         </Section>
 
-        <Divider />
-
-        {/* ================= PREFERENCES ================= */}
-        <Section title="Preferences">
-          <Item
-            icon="settings-outline"
-            label="App Settings"
-            onPress={() => {}}
-          />
-          <Item
-            icon="notifications-outline"
-            label="Notifications"
-            onPress={() => {}}
-          />
-        </Section>
-
-        <Divider />
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {/* ================= LOGOUT ================= */}
         <Pressable style={styles.logout} onPress={onLogout}>
           <Ionicons name="log-out-outline" size={20} color="#DC2626" />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>Logout from Legal-IQ</Text>
         </Pressable>
       </View>
     </Pressable>
@@ -88,16 +93,28 @@ export default function ProfileSidebar({
 
 /* ================= COMPONENTS ================= */
 
+function StatItem({ label, value }: { label: string, value: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ alignItems: 'center', flex: 1 }}>
+      <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>{value}</Text>
+      <Text style={{ fontSize: 11, color: colors.textSecondary, textTransform: 'uppercase', fontWeight: '500' }}>{label}</Text>
+    </View>
+  );
+}
+
 function Section({
   title,
   children,
+  color,
 }: {
   title: string;
   children: React.ReactNode;
+  color: string;
 }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <Text style={[styles.sectionTitle, { color }]}>{title}</Text>
       {children}
     </View>
   );
@@ -107,27 +124,26 @@ function Item({
   icon,
   label,
   onPress,
+  textColor,
 }: {
   icon: any;
   label: string;
   onPress: () => void;
+  textColor: string;
 }) {
+  const { theme } = useTheme();
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.item,
-        pressed && styles.itemPressed,
+        pressed && { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : '#F1F5F9' },
       ]}
     >
-      <Ionicons name={icon} size={20} color="#334155" />
-      <Text style={styles.itemText}>{label}</Text>
+      <Ionicons name={icon} size={20} color={textColor} />
+      <Text style={[styles.itemText, { color: textColor }]}>{label}</Text>
     </Pressable>
   );
-}
-
-function Divider() {
-  return <View style={styles.divider} />;
 }
 
 /* ================= STYLES ================= */
@@ -144,12 +160,11 @@ const styles = StyleSheet.create({
 
   sidebar: {
     width: 320,
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 20,
     paddingTop: 52,
     paddingBottom: 28,
-    borderTopLeftRadius: 18,
-    borderBottomLeftRadius: 18,
+    borderTopLeftRadius: 24,
+    borderBottomLeftRadius: 24,
     elevation: 30,
   },
 
@@ -165,10 +180,9 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#1E3A8A",
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -181,28 +195,38 @@ const styles = StyleSheet.create({
 
   cameraBadge: {
     position: "absolute",
-    bottom: 4,
-    right: 4,
+    bottom: 0,
+    right: 0,
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#020617",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "#FFFFFF",
   },
 
   name: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#020617",
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.5,
   },
 
   role: {
     fontSize: 13,
-    color: "#64748B",
+    fontWeight: "600",
     marginTop: 2,
+  },
+
+  firm: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+    textTransform: 'uppercase'
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    paddingVertical: 10,
   },
 
   /* SECTIONS */
@@ -211,16 +235,17 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#64748B",
-    marginBottom: 6,
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    opacity: 0.6,
   },
 
   divider: {
     height: 1,
-    backgroundColor: "#E5E7EB",
     marginVertical: 16,
+    opacity: 0.5,
   },
 
   /* ITEMS */
@@ -228,19 +253,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-  },
-
-  itemPressed: {
-    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 10,
+    borderRadius: 12,
   },
 
   itemText: {
     marginLeft: 14,
     fontSize: 15,
-    fontWeight: "500",
-    color: "#1E293B",
+    fontWeight: "600",
   },
 
   /* LOGOUT */
@@ -248,14 +268,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginTop: 20,
   },
 
   logoutText: {
     marginLeft: 14,
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#DC2626",
   },
 });

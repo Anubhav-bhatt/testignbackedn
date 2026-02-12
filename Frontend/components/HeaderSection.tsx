@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../app/context/ThemeContext";
 
 interface Props {
   lawyerName: string;
@@ -11,13 +13,15 @@ export default function HeaderSection({
   onProfilePress,
   isProfileOpen,
 }: Props) {
+  const { theme, toggleTheme, colors } = useTheme();
+
   const hours = new Date().getHours();
   const greeting =
     hours < 12
       ? "Good Morning"
       : hours < 17
-      ? "Good Afternoon"
-      : "Good Evening";
+        ? "Good Afternoon"
+        : "Good Evening";
 
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
@@ -29,26 +33,37 @@ export default function HeaderSection({
     <View style={styles.wrapper}>
       {/* LEFT TEXT BLOCK */}
       <View style={styles.textBlock}>
-        <Text style={styles.greeting}>{greeting}</Text>
-        <Text style={styles.name}>{lawyerName}</Text>
-        <Text style={styles.date}>{today}</Text>
+        <Text style={[styles.greeting, { color: colors.textSecondary }]}>{greeting}</Text>
+        <Text style={[styles.name, { color: colors.text }]}>{lawyerName}</Text>
+        <Text style={[styles.date, { color: colors.textSecondary }]}>{today}</Text>
       </View>
 
-      {/* RIGHT USER AVATAR */}
-      <Pressable
-        onPress={onProfilePress}
-        style={({ pressed }) => [
-          styles.userButton,
-          isProfileOpen && styles.userButtonActive,
-          pressed && styles.userButtonPressed,
-        ]}
-      >
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {lawyerName.charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      </Pressable>
+      <View style={styles.actions}>
+        {/* THEME TOGGLE */}
+        <Pressable
+          onPress={toggleTheme}
+          style={[styles.iconButton, { backgroundColor: theme === 'light' ? colors.accent : colors.surface }]}
+        >
+          <Ionicons name={theme === 'light' ? "moon-outline" : "sunny-outline"} size={20} color={colors.text} />
+        </Pressable>
+
+        {/* RIGHT USER AVATAR */}
+        <Pressable
+          onPress={onProfilePress}
+          style={({ pressed }) => [
+            styles.userButton,
+            { backgroundColor: theme === 'light' ? colors.accent : colors.surface },
+            isProfileOpen && { borderColor: colors.primary, borderWidth: 1 },
+            pressed && styles.userButtonPressed,
+          ]}
+        >
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={styles.avatarText}>
+              {lawyerName.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -71,7 +86,6 @@ const styles = StyleSheet.create({
 
   greeting: {
     fontSize: 13,
-    color: "#64748B",
     fontWeight: "500",
     marginBottom: 2,
   },
@@ -79,26 +93,31 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: "800",
-    color: "#020617",
   },
 
   date: {
     fontSize: 12,
-    color: "#94A3B8",
     marginTop: 4,
+  },
+
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   /* USER BUTTON */
   userButton: {
     padding: 4,
     borderRadius: 999,
-    backgroundColor: "#EEF2FF",
-  },
-
-  userButtonActive: {
-    backgroundColor: "#E0E7FF",
-    borderWidth: 1,
-    borderColor: "#C7D2FE",
   },
 
   userButtonPressed: {
@@ -110,7 +129,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#1E3A8A",
     alignItems: "center",
     justifyContent: "center",
   },
