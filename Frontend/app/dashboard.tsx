@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
-import { FlatList, Image, Modal, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getCases, getProfile } from "../api";
+import { getCases, getProfile, updateProfile, uploadDocument } from "../api";
 import HeaderSection from "../components/HeaderSection";
 import ProfileSidebar from "../components/ProfileSidebar";
 import SwipeableRow from "../components/SwipeableRow";
@@ -112,6 +114,50 @@ export default function Dashboard() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [uploadingProfile, setUploadingProfile] = useState(false);
+
+  const handleUpdateProfileImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission Denied", "Camera access is needed to change your profile picture.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: 'images',
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (!result.canceled) {
+        setUploadingProfile(true);
+        const asset = result.assets[0];
+        const file = {
+          uri: asset.uri,
+          name: `profile_${Date.now()}.jpg`,
+          type: 'image/jpeg',
+        } as any;
+
+        // 1. Upload the image
+        const uploadRes = await uploadDocument(file, "profile-temp", "selfie");
+        
+        // 2. Update user profile with new selfie_url
+        await updateProfile({ selfie_url: uploadRes.filename });
+        
+        // 3. Refresh data
+        await fetchData();
+        Alert.alert("Success", "Profile picture updated successfully!");
+      }
+    } catch (error) {
+      console.error("Profile Update Error:", error);
+      Alert.alert("Error", "Failed to update profile picture.");
+    } finally {
+      setUploadingProfile(false);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     try {
       setRefreshing(true);
@@ -148,9 +194,10 @@ export default function Dashboard() {
         ListHeaderComponent={() => (
           <>
             <HeaderSection
-              lawyerName="Anubhav"
+              lawyerName={userProfile?.name?.split(' ')[0] || "User"}
               isProfileOpen={showProfile}
               onProfilePress={() => setShowProfile((v) => !v)}
+              selfieUrl={userProfile?.selfie_url}
             />
 
             {/* PRO SEARCH - Floating Style */}
@@ -240,7 +287,15 @@ export default function Dashboard() {
                   {/* PHOTO & LEFT */}
                   <View style={styles.leftSection}>
                     <TouchableOpacity onPress={() => setSelectedImage(item.clientImage)}>
-                      <Image source={{ uri: item.clientImage }} style={styles.clientAvatar} />
+                      {item.clientImage ? (
+                        <Image source={{ uri: item.clientImage }} style={styles.clientAvatar} />
+                      ) : (
+                        <View style={[styles.clientAvatar, { backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center' }]}>
+                          <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 18 }}>
+                            {item.clientName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().substring(0, 2) || "?"}
+                          </Text>
+                        </View>
+                      )}
                     </TouchableOpacity>
 
                     <View style={styles.mainInfo}>
@@ -253,7 +308,7 @@ export default function Dashboard() {
                         {/* Type Badge */}
                         <View style={[styles.categoryBadge, { backgroundColor: item.category === 'Criminal' ? '#FEF2F2' : '#F0F9FF', borderColor: item.category === 'Criminal' ? '#FECACA' : '#BAE6FD' }]}>
                           <Text style={[styles.categoryBadgeText, { color: item.category === 'Criminal' ? '#DC2626' : '#0369A1' }]}>
-                            {item.category.toUpperCase()}
+                            {item.category ? item.category.toUpperCase() : 'UNKNOWN'}
                           </Text>
                         </View>
                         {/* Case ID Badge */}
@@ -304,11 +359,16 @@ export default function Dashboard() {
         visible={showProfile}
         profile={userProfile}
         onClose={() => setShowProfile(false)}
-        onUploadImage={() => console.log("Upload image")}
-        onPersonalDetails={() => console.log("Personal details")}
-        onLogout={() => {
+        onUploadImage={handleUpdateProfileImage}
+        uploading={uploadingProfile}
+        onPersonalDetails={() => {
           setShowProfile(false);
-          console.log("Logout");
+          router.push("/profile/personal-details");
+        }}
+        onLogout={async () => {
+          setShowProfile(false);
+          await AsyncStorage.removeItem("userToken");
+          router.replace("/auth/login");
         }}
       />
 

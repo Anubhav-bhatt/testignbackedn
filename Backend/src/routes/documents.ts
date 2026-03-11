@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getDocuments, upload, uploadDocument } from "../controllers/documentController";
+import { deleteDocument, getDocuments, upload, uploadDocument } from "../controllers/documentController";
 
 const router = Router();
 
@@ -8,5 +8,8 @@ router.post("/upload", upload.single("file"), uploadDocument);
 
 // Get all documents (optionally filtered by caseId)
 router.get("/", getDocuments);
+
+// Delete a document
+router.delete("/:id", deleteDocument);
 
 export default router;

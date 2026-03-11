@@ -8,7 +8,7 @@ export default function BottomFloatingBar() {
   const pathname = usePathname();
   const { colors, theme } = useTheme();
 
-  const active = (path: string) => pathname === path;
+  const active = (path: string) => pathname === path || (path !== "/" && pathname.startsWith(path));
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, shadowColor: theme === 'dark' ? '#000' : '#64748B' }]}>

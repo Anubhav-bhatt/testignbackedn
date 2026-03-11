@@ -25,6 +25,9 @@ expo-env.d.ts
 Backend/.env
 Backend/uploads/
 Backend/dist/
+AI/node_modules/
+AI/.env
+AI/data/
 
 # debug
 npm-debug.*

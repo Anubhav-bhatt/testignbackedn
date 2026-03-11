@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { getCases } from "../api";
+import { getCases, getFileUrl, getProfile } from "../api";
 import { useTheme } from "./context/ThemeContext";
 
 export default function ClientsScreen() {
@@ -18,16 +19,24 @@ export default function ClientsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const data = await getCases();
-        // Map cases to clients (since in this mock, one case = one client)
-        const mappedClients = data.map((c: any) => ({
+        const [casesData, profileData] = await Promise.all([
+          getCases(),
+          getProfile()
+        ]);
+        
+        setUserProfile(profileData);
+        
+        // Map cases to clients
+        const mappedClients = casesData.map((c: any) => ({
           id: c.id,
           name: c.clientName,
+          image: c.clientImage,
           matter: `${c.category}: ${c.title}`,
           hearing: c.nextHearing,
           status: c.status,
@@ -35,12 +44,12 @@ export default function ClientsScreen() {
         }));
         setClients(mappedClients);
       } catch (err) {
-        console.log("Error fetching clients", err);
+        console.log("Error fetching data", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchClients();
+    fetchData();
   }, []);
 
   const filteredClients = clients.filter(c =>
@@ -57,7 +66,16 @@ export default function ClientsScreen() {
           <Text style={[styles.title, { color: colors.text }]}>Client Directory</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Managed legal relations</Text>
         </View>
-        <Ionicons name="people-circle" size={40} color={colors.primary} />
+        <View style={styles.headerRight}>
+          {userProfile?.selfie_url ? (
+            <Image 
+              source={{ uri: getFileUrl(userProfile.selfie_url) }} 
+              style={styles.userAvatar} 
+            />
+          ) : (
+            <Ionicons name="people-circle" size={40} color={colors.primary} />
+          )}
+        </View>
       </View>
 
       <View style={[styles.searchBar, { backgroundColor: theme === 'dark' ? colors.surface : '#FFF', borderColor: colors.border }]}>
@@ -84,7 +102,11 @@ export default function ClientsScreen() {
           renderItem={({ item }) => (
             <View style={[styles.card, { backgroundColor: theme === 'dark' ? colors.surface : '#FFFFFF', borderColor: colors.border }]}>
               <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
-                <Text style={[styles.avatarText, { color: colors.primary }]}>{item.initials}</Text>
+                {item.image ? (
+                  <Image source={{ uri: item.image }} style={styles.clientImage} />
+                ) : (
+                  <Text style={[styles.avatarText, { color: colors.primary }]}>{item.initials}</Text>
+                )}
               </View>
 
               <View style={styles.info}>
@@ -141,6 +163,24 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   searchInput: { flex: 1, fontSize: 15, fontWeight: '600' },
+  headerRight: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  clientImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+  },
   listContent: { padding: 24, paddingBottom: 140 },
   card: {
     flexDirection: 'row',

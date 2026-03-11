@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.anubhav.legaliq",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -39,11 +40,25 @@
             "backgroundColor": "#000000"
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Legal-IQ to access your photos to upload verification documents.",
+          "cameraPermission": "Allow Legal-IQ to access your camera to take a verification selfie."
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fad992c7-b838-4a07-a134-34214da63940"
+      }
+    },
+    "owner": "anubhavexpo"
   }
 }

@@ -23,6 +23,7 @@ import {
   closeCase,
   createNote,
   createPayment,
+  deleteDocument,
   deleteNote,
   deletePayment,
   getCaseById,
@@ -34,6 +35,7 @@ import {
   updateHearingDate,
   uploadDocument
 } from "../../api";
+import AIAssistantCard from "../../components/AIAssistantCard";
 import { useTheme } from "../context/ThemeContext";
 
 export default function CaseDetailsScreen() {
@@ -61,6 +63,8 @@ export default function CaseDetailsScreen() {
   const [showDocumentsModal, setShowDocumentsModal] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSizes, setUploadSizes] = useState({ loaded: 0, total: 0 });
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
 
   // Notes State
   const [notes, setNotes] = useState<any[]>([]);
@@ -137,11 +141,33 @@ export default function CaseDetailsScreen() {
     }
   };
 
-  const handleDocumentUpload = async () => {
+  const handleDeleteDocument = (id: string) => {
+    setDocumentToDelete(id);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const confirmDeleteDocument = async () => {
+    if (!documentToDelete) return;
+    try {
+      await deleteDocument(documentToDelete);
+      fetchDocuments(); // refresh list
+    } catch (error) {
+      if (Platform.OS === 'web') {
+        window.alert("Could not remove the document.");
+      } else {
+        Alert.alert("Error", "Could not remove the document.");
+      }
+    } finally {
+      setShowDeleteConfirmModal(false);
+      setDocumentToDelete(null);
+    }
+  };
+
+  const handleDocumentUpload = async (fileType: string = "*/*") => {
     let interval: any = null;
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: "*/*",
+        type: fileType,
         copyToCacheDirectory: true,
       });
 
@@ -168,6 +194,7 @@ export default function CaseDetailsScreen() {
       await uploadDocument(
         file,
         caseIdParam || "default",
+        undefined, // docType
         (progress, loaded, total) => {
           setUploadProgress(prev => Math.max(prev, progress));
           setUploadSizes({ loaded, total: total || totalSize });
@@ -511,6 +538,11 @@ export default function CaseDetailsScreen() {
           </View>
         </View>
 
+        {/* AI INSIGHTS CARD */}
+        <View style={styles.section}>
+          <AIAssistantCard caseId={caseIdParam || "default"} />
+        </View>
+
         {/* AI SUMMARY */}
         <View style={styles.section}>
           <Pressable
@@ -749,6 +781,9 @@ export default function CaseDetailsScreen() {
                   }}>
                     <Ionicons name="download-outline" size={20} color={colors.textSecondary} />
                   </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteDocument(doc.id)}>
+                    <Ionicons name="trash-outline" size={20} color={colors.danger} />
+                  </TouchableOpacity>
                 </View>
               </View>
             ))}
@@ -811,13 +846,23 @@ export default function CaseDetailsScreen() {
                   </View>
                 </View>
               ) : (
-                <TouchableOpacity
-                  style={[styles.uploadButton, { backgroundColor: colors.primary }]}
-                  onPress={handleDocumentUpload}
-                >
-                  <Ionicons name="cloud-upload-outline" size={20} color="#FFF" />
-                  <Text style={styles.uploadButtonText}>Upload New Document</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity
+                    style={[styles.uploadButton, { flex: 1, backgroundColor: colors.primary }]}
+                    onPress={() => handleDocumentUpload()}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={20} color="#FFF" />
+                    <Text style={styles.uploadButtonText}>Upload Document</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.uploadButton, { flex: 1, backgroundColor: '#EC4899' }]}
+                    onPress={() => handleDocumentUpload("video/*")}
+                  >
+                    <Ionicons name="videocam-outline" size={20} color="#FFF" />
+                    <Text style={styles.uploadButtonText}>Upload Video</Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               <FlatList
@@ -851,6 +896,9 @@ export default function CaseDetailsScreen() {
                         Linking.openURL(url).catch(err => Alert.alert("Error", "Cannot download file"));
                       }}>
                         <Ionicons name="download-outline" size={22} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteDocument(item.id)}>
+                        <Ionicons name="trash-outline" size={22} color={colors.danger} />
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -1205,6 +1253,46 @@ export default function CaseDetailsScreen() {
         </View>
       </Modal>
 
+      {/* DELETE DOCUMENT CONFIRMATION MODAL */}
+      <Modal
+        visible={showDeleteConfirmModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => {
+          setShowDeleteConfirmModal(false);
+          setDocumentToDelete(null);
+        }}
+      >
+        <View style={styles.modalOverlayCenter}>
+          <View style={[styles.modalContentCenter, { backgroundColor: theme === 'dark' ? '#1E293B' : '#FFFFFF' }]}>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <Ionicons name="warning" size={48} color={colors.danger} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.text, textAlign: 'center', marginBottom: 8 }]}>Remove Document</Text>
+            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginBottom: 24 }}>Are you sure you want to remove this file permanently? This action cannot be undone.</Text>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity
+                style={[styles.uploadButton, { flex: 1, backgroundColor: theme === 'dark' ? '#334155' : '#E2E8F0', marginBottom: 0 }]}
+                onPress={() => {
+                  setShowDeleteConfirmModal(false);
+                  setDocumentToDelete(null);
+                }}
+              >
+                <Text style={[styles.uploadButtonText, { color: theme === 'dark' ? '#FFF' : '#1E293B' }]}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.uploadButton, { flex: 1, backgroundColor: colors.danger, marginBottom: 0 }]}
+                onPress={confirmDeleteDocument}
+              >
+                <Text style={[styles.uploadButtonText, { color: '#FFF' }]}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -1409,6 +1497,33 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     padding: 20,
+  },
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContentCenter: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 24,
+    padding: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+      },
+      android: {
+        elevation: 10,
+      },
+      web: {
+        boxShadow: '0px 10px 30px rgba(0,0,0,0.1)',
+      }
+    }),
   },
   uploadButton: {
     flexDirection: 'row',

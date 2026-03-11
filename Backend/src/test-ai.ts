@@ -13,7 +13,10 @@ const run = async () => {
     }
 
     const genAI = new GoogleGenerativeAI(key || "");
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        systemInstruction: "You are a helpful assistant."
+    });
 
     try {
         const result = await model.generateContent("Hello from test script");

@@ -97,6 +97,14 @@ export default function NewCaseScreen() {
         }
     };
 
+    const removeDoc = (key: string) => {
+        setDocuments(prev => {
+            const updated = { ...prev };
+            delete updated[key];
+            return updated;
+        });
+    };
+
     const isSubmitDisabled = !form.title || !form.clientName || !form.nextHearing ||
         !documents['fir'] || !documents['aadhar'] || !documents['pancard'] || loading;
 
@@ -239,9 +247,8 @@ export default function NewCaseScreen() {
                         <Text style={[styles.sectionTitle, { color: colors.textSecondary, marginTop: 10 }]}>MANDATORY DOCUMENTS</Text>
                         <View style={styles.docsList}>
                             {REQUIRED_DOCS.map((doc) => (
-                                <TouchableOpacity
+                                <View
                                     key={doc.key}
-                                    onPress={() => handleDocUpload(doc.key)}
                                     style={[
                                         styles.docRow,
                                         { backgroundColor: colors.surface, borderColor: colors.border },
@@ -254,7 +261,7 @@ export default function NewCaseScreen() {
                                             size={20}
                                             color={documents[doc.key] ? colors.primary : colors.textSecondary}
                                         />
-                                        <View>
+                                        <View style={{ flex: 1 }}>
                                             <Text style={[styles.docLabel, { color: colors.text }]}>
                                                 {doc.label} {doc.mandatory && <Text style={{ color: colors.danger }}>*</Text>}
                                             </Text>
@@ -266,11 +273,15 @@ export default function NewCaseScreen() {
                                         </View>
                                     </View>
                                     {documents[doc.key] ? (
-                                        <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                                        <TouchableOpacity onPress={() => removeDoc(doc.key)} style={{ padding: 4 }}>
+                                            <Ionicons name="trash-outline" size={24} color={colors.danger} />
+                                        </TouchableOpacity>
                                     ) : (
-                                        <Ionicons name="cloud-upload-outline" size={20} color={colors.textSecondary} />
+                                        <TouchableOpacity onPress={() => handleDocUpload(doc.key)} style={{ padding: 4 }}>
+                                            <Ionicons name="cloud-upload-outline" size={24} color={colors.textSecondary} />
+                                        </TouchableOpacity>
                                     )}
-                                </TouchableOpacity>
+                                </View>
                             ))}
                         </View>
 

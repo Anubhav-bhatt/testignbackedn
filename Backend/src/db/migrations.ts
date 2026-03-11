@@ -84,6 +84,18 @@ const createTables = async () => {
       );
     `);
 
+    // Case Embeddings (using float8[])
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS case_embeddings (
+        id SERIAL PRIMARY KEY,
+        case_id TEXT REFERENCES cases(id) ON DELETE CASCADE,
+        document_id TEXT REFERENCES documents(id) ON DELETE CASCADE,
+        content TEXT,
+        metadata JSONB,
+        embedding float8[]
+      );
+    `);
+
     await client.query('COMMIT');
     console.log('Tables created successfully');
   } catch (error) {

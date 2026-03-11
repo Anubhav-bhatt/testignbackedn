@@ -1,19 +1,33 @@
 import { Request, Response } from "express";
+import { getCaseInsights } from "../../../AI/engine/insights";
 import { query } from "../db";
 import { generateLegalResponse } from "../services/aiService";
 
 export const getCases = async (req: Request, res: Response) => {
     try {
-        const text = `
+        const userId = req.headers['user-id'] as string;
+        
+        // Fetch user to check role
+        const { rows: userRows } = await query('SELECT role FROM users WHERE id = $1', [userId]);
+        const userRole = userRows.length > 0 ? userRows[0].role : 'client';
+
+        let text = `
             SELECT 
                 c.*,
                 (SELECT COUNT(*)::int FROM documents d WHERE d.case_id = c.id) as document_count,
                 (SELECT COALESCE(SUM(amount), 0)::float FROM payments p WHERE p.case_id = c.id) as total_billed,
                 (SELECT COALESCE(SUM(amount), 0)::float FROM payments p WHERE p.case_id = c.id AND p.status = 'Paid') as total_paid
             FROM cases c
-            ORDER BY c.next_hearing ASC
         `;
-        const { rows } = await query(text);
+
+        const params: any[] = [];
+        if (userRole !== 'admin') {
+            text += ` WHERE c.lawyer_id = $1`;
+            params.push(userId);
+        }
+
+        text += ` ORDER BY c.next_hearing ASC`;
+        const { rows } = await query(text, params);
 
         const summary = rows.map(r => {
             const pendingValue = r.total_billed - r.total_paid;
@@ -59,6 +73,8 @@ export const createCase = async (req: Request, res: Response) => {
         const clientImage = providedImage || `https://i.pravatar.cc/150?u=${Math.random()}`;
         const statusColor = defaultCategory === 'Criminal' ? "#EF4444" : "#3B82F6";
 
+        const userId = req.headers['user-id'] || 'u1';
+        
         const { rows } = await query(
             `INSERT INTO cases (
                 id, case_id, title, client_name, client_image, category, court, next_hearing, status, status_color, lawyer_id
@@ -74,7 +90,7 @@ export const createCase = async (req: Request, res: Response) => {
                 nextHearing || "TBD",
                 "Newly Filed",
                 statusColor,
-                "u1" // Default lawyer ID
+                userId
             ]
         );
 
@@ -203,42 +219,9 @@ export const getCaseById = async (req: Request, res: Response) => {
 export const getCaseAnalysis = async (req: Request, res: Response) => {
     const id = req.params.id as string;
     try {
-        const caseRes = await query('SELECT * FROM cases WHERE id = $1', [id]);
-        if (caseRes.rows.length === 0) {
-            return res.status(404).json({ message: "Case not found" });
-        }
-        const c = caseRes.rows[0];
-
-        const [docsRes, paymentsRes] = await Promise.all([
-            query('SELECT count(*) as count, min(original_name) as first_doc_name FROM documents WHERE case_id = $1', [id]),
-            query('SELECT amount, status FROM payments WHERE case_id = $1', [id])
-        ]);
-
-        const docCount = parseInt(docsRes.rows[0].count);
-        const firstDocName = docsRes.rows[0].first_doc_name || "folders";
-
-        const payments = paymentsRes.rows;
-        const totalBilled = payments.reduce((acc, p) => acc + parseFloat(p.amount), 0);
-        const totalPaid = payments.filter(p => p.status === 'Paid').reduce((acc, p) => acc + parseFloat(p.amount), 0);
-        const moneyPending = totalBilled - totalPaid;
-
-        const analysis = {
-            summary: `This is a ${c.category} matter filed in ${c.court}. The current status is ${c.status}. There are ${docCount} uploaded documents in the folder.`,
-            risks: [
-                moneyPending > 10000 ? "Significant financial exposure (₹" + moneyPending + " pending)." : "Financial health is stable.",
-                docCount < 2 ? "Low documentation volume; critical evidence might be missing." : "Strong documentation base available.",
-                c.next_hearing === 'TBD' ? "Temporal Risk: Next hearing not yet scheduled." : "Preparation needed for hearing on " + c.next_hearing
-            ].filter(Boolean).join("\n"),
-            actions: [
-                "Review " + firstDocName + " for potential contradictions.",
-                "Draft a client update emphasizing the " + c.status + " stage.",
-                "Schedule a strategy session 48 hours before " + c.next_hearing
-            ].join("\n"),
-            precedents: c.category === 'Criminal' ? "Refer to Section 437/439 CrPC regarding Bail precedents." : "Refer to local civil procedure regarding boundary disputes."
-        };
-
-        res.json(analysis);
-
+        console.log(`[AI] Generating Strategic Analysis for case: ${id}`);
+        const insights = await getCaseInsights(id);
+        res.json(insights);
     } catch (error) {
         console.error("Error fetching analysis:", error);
         res.status(500).json({ message: "Internal Server Error" });

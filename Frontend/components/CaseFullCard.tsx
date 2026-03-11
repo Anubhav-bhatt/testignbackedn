@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Image,
   Platform,
   Pressable,
   StyleSheet,
@@ -22,6 +23,7 @@ type CaseItem = {
   id: string | number;
   title: string;
   client: string;
+  clientImage?: string;
   caseDate: string;
   category: string;
   court: string;
@@ -71,6 +73,18 @@ export default function CaseFullCard({
           PRIMARY ROW
       ====================== */}
       <Pressable onPress={openSummary} style={styles.primaryRow}>
+        <View style={styles.avatarContainer}>
+          {caseItem.clientImage ? (
+            <Image source={{ uri: caseItem.clientImage }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: colors.primary + '20' }]}>
+              <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 16 }}>
+                {caseItem.client.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)}
+              </Text>
+            </View>
+          )}
+        </View>
+
         <View style={styles.leftBlock}>
           <View style={styles.clientRow}>
             <Text style={[styles.clientName, { color: colors.text }]} numberOfLines={1}>
@@ -218,7 +232,19 @@ const styles = StyleSheet.create({
 
   leftBlock: {
     flex: 1,
+    marginRight: 8,
+  },
+  avatarContainer: {
     marginRight: 12,
+    justifyContent: 'center',
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
 
   clientName: {

@@ -57,17 +57,22 @@ export default function AllCasesScreen() {
 
   const filteredCases = useMemo(() => {
     return casesList.filter((c) => {
+      const title = c.title || "";
+      const clientName = c.clientName || "";
+      const caseId = c.caseId || "";
+      const category = c.category || "";
+
       const matchesSearch =
-        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.caseId.toLowerCase().includes(searchQuery.toLowerCase());
+        title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        caseId.toLowerCase().includes(searchQuery.toLowerCase());
 
       if (selectedCategory === "Closed") {
         return matchesSearch && c.status === "Closed";
       }
 
       const matchesCategory =
-        c.category.toLowerCase().includes(selectedCategory.toLowerCase());
+        category.toLowerCase().includes(selectedCategory.toLowerCase());
 
       const isActive = c.status !== "Closed";
 
@@ -175,6 +180,7 @@ export default function AllCasesScreen() {
                 id: item.id,
                 title: item.title,
                 client: item.clientName,
+                clientImage: item.clientImage,
                 caseDate: item.caseId || "N/A",
                 category: item.category,
                 court: item.court,

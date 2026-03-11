@@ -8,8 +8,7 @@ export default function RootLayout() {
   const pathname = usePathname();
   // Hide bottom bar on auth screens or if looking at a specific file preview if needed
   // For now assuming all non-auth screens need it. 
-  // Hide bottom bar ONLY on auth screens
-  const hideBarOn = ["/auth", "/cases/new", "/cases/case-details"];
+  const hideBarOn = ["/auth/login", "/auth/signup", "/auth/otp", "/auth/documents", "/auth/pending", "/cases/new", "/cases/case-details"];
   const showBottomBar = !hideBarOn.some(path => pathname === path || pathname.startsWith(path + "?"));
 
   return (

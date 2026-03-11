@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import fs from "fs";
 import multer from "multer";
 import path from "path";
+import { processDocument } from "../../../AI/engine/ingestion";
 import { query } from "../db";
 
 // Configure Multer
@@ -58,6 +59,15 @@ export const uploadDocument = async (req: Request, res: Response) => {
             docType: newDoc.doc_type,
             createdAt: newDoc.created_at
         });
+
+        // Phase: AI Ingestion (Async)
+        if (finalCaseId) {
+            processDocument(
+                req.file.path,
+                finalCaseId,
+                newDoc.id
+            ).catch((err: any) => console.error("AI Ingestion Background Error:", err));
+        }
     } catch (error) {
         console.error("Error uploading document:", error);
         res.status(500).json({ message: "Internal Server Error" });
@@ -94,5 +104,32 @@ export const getDocuments = async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Error fetching documents:", error);
         res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+export const deleteDocument = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    try {
+        const { rows } = await query('SELECT * FROM documents WHERE id = $1', [id]);
+        if (rows.length === 0) {
+            res.status(404).json({ error: "Document not found" });
+            return;
+        }
+
+        const doc = rows[0];
+        const filePath = path.join(__dirname, "../../uploads", doc.filename);
+
+        // Remove file from filesystem if it exists
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        // Delete from DB and optionally vectors (since this is AI powered)
+        await query('DELETE FROM documents WHERE id = $1', [id]);
+
+        res.json({ message: "Document deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting document:", error);
+        res.status(500).json({ error: "Failed to delete document" });
     }
 };

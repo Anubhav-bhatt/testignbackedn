@@ -1,17 +1,20 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { getFileUrl } from "../api";
 import { useTheme } from "../app/context/ThemeContext";
 
 interface Props {
   lawyerName: string;
   onProfilePress: () => void;
   isProfileOpen: boolean;
+  selfieUrl?: string;
 }
 
 export default function HeaderSection({
   lawyerName,
   onProfilePress,
   isProfileOpen,
+  selfieUrl,
 }: Props) {
   const { theme, toggleTheme, colors } = useTheme();
 
@@ -57,11 +60,19 @@ export default function HeaderSection({
             pressed && styles.userButtonPressed,
           ]}
         >
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={styles.avatarText}>
-              {lawyerName.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          {selfieUrl ? (
+            <Image 
+              source={{ uri: getFileUrl(selfieUrl) }} 
+              style={styles.avatar} 
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+              <Text style={styles.avatarText}>
+                {lawyerName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
     </View>

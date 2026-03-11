@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: legal-iq-backend
+    env: node
+    plan: free
+    buildCommand: "cd Backend && npm install && npm run build"
+    startCommand: "cd Backend && npm start"
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20.0.0
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "true"
+      - key: GEMINI_API_KEY
+        sync: false

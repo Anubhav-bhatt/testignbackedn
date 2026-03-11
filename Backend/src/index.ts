@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import express from "express";
 import fs from "fs";
 import path from "path";
+import aiRoutes from "./routes/ai";
 import caseRoutes from "./routes/cases";
 import documentRoutes from "./routes/documents";
 import noteRoutes from "./routes/notes";
@@ -27,12 +28,15 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Routes
+import authRoutes from "./routes/auth";
+app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/notes", noteRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/cases", caseRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/ai", aiRoutes);
 
 // Health check
 app.get("/", (req, res) => {

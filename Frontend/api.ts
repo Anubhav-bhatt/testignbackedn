@@ -1,12 +1,23 @@
-
 import axios from 'axios';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ─────────────────────────────────────────────────────────────
+// 🚀 PRODUCTION: When your backend is deployed (Railway/Render),
+//    replace the string below with your public URL, e.g.:
+//    const PRODUCTION_BACKEND_URL = 'https://legal-iq-api.up.railway.app';
+//    Then set android / ios / default to PRODUCTION_BACKEND_URL.
+// ─────────────────────────────────────────────────────────────
+
+// 🏠 LOCAL DEV: Update this IP to match your Mac's current WiFi IP.
+//    Run: ipconfig getifaddr en0   (on your Mac terminal)
+const LOCAL_BACKEND_URL = 'http://192.168.6.76:3000';
 
 const BASE_URL = Platform.select({
     web: 'http://localhost:3000',
-    android: 'http://10.0.2.2:3000',
-    ios: 'http://localhost:3000',
-    default: 'http://localhost:3000',
+    android: LOCAL_BACKEND_URL,
+    ios: LOCAL_BACKEND_URL,
+    default: LOCAL_BACKEND_URL,
 });
 
 const API_URL = `${BASE_URL}/api`;
@@ -15,13 +26,55 @@ const api = axios.create({
     baseURL: API_URL,
 });
 
+api.interceptors.request.use(async (config) => {
+    try {
+        const token = await AsyncStorage.getItem("userToken");
+        if (token) {
+            config.headers['user-id'] = token;
+        }
+    } catch (e) {
+        // failed to get token
+    }
+    return config;
+});
+
 export const getFileUrl = (filename: string) => {
     return `${BASE_URL}/uploads/${filename}`;
 };
 
-export const uploadDocument = async (file: any, caseId: string, onUploadProgress?: (progress: number, loaded: number, total: number) => void) => {
+export const signup = async (data: { name: string; email: string; phone: string; role?: string; uploadedDocIds?: string[] }) => {
+    try {
+        const response = await api.post('/auth/signup', data);
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data?.error || "Error during signup";
+    }
+};
+
+export const login = async (data: { phone: string }) => {
+    try {
+        const response = await api.post('/auth/login', data);
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data?.error || "Error during login";
+    }
+};
+
+export const sendOtp = async (data: { phone: string, checkExists?: boolean }) => {
+    try {
+        const response = await api.post('/auth/send-otp', data);
+        return response.data;
+    } catch (error: any) {
+        throw error.response?.data?.error || "Error sending OTP";
+    }
+};
+
+export const uploadDocument = async (file: any, caseId: string, docType?: string, onUploadProgress?: (progress: number, loaded: number, total: number) => void) => {
     const formData = new FormData();
     formData.append('caseId', caseId);
+    if (docType) {
+        formData.append('docType', docType);
+    }
 
     if (Platform.OS === 'web' && file.file) {
         formData.append('file', file.file);
@@ -29,12 +82,21 @@ export const uploadDocument = async (file: any, caseId: string, onUploadProgress
         formData.append('file', {
             uri: file.uri,
             name: file.name,
-            type: file.mimeType || 'application/octet-stream',
+            type: file.type || file.mimeType || 'application/octet-stream',
         } as any);
     }
 
+    console.log("📤 Preparing to upload file via FormData:", {
+        uri: file.uri,
+        name: file.name,
+        type: file.type || file.mimeType || 'application/octet-stream'
+    });
+
     try {
         const response = await api.post('/documents/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
             onUploadProgress: (progressEvent) => {
                 if (onUploadProgress && progressEvent.total) {
                     const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -42,9 +104,14 @@ export const uploadDocument = async (file: any, caseId: string, onUploadProgress
                 }
             },
         });
+        console.log("📥 Upload success response:", response.data);
         return response.data;
-    } catch (error) {
-        console.error("Error uploading document:", error);
+    } catch (error: any) {
+        console.error("❌ Error uploading document:", error);
+        if (error.response) {
+            console.error("Response data:", error.response.data);
+            console.error("Response status:", error.response.status);
+        }
         throw error;
     }
 };
@@ -57,6 +124,15 @@ export const getDocuments = async (caseId?: string) => {
         return response.data;
     } catch (error) {
         console.error("Error fetching documents:", error);
+        throw error;
+    }
+};
+
+export const deleteDocument = async (id: string) => {
+    try {
+        await api.delete(`/documents/${id}`);
+    } catch (error) {
+        console.error("Error deleting document:", error);
         throw error;
     }
 };
@@ -173,6 +249,56 @@ export const getProfile = async () => {
     }
 };
 
+export const updateProfile = async (data: { name?: string; firmName?: string; barId?: string; selfie_url?: string; biometrics_enabled?: boolean }) => {
+    try {
+        const response = await api.put('/user/profile', data);
+        return response.data;
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        throw error;
+    }
+};
+
+export const getAllUsers = async () => {
+    try {
+        const response = await api.get('/user/all');
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching all users:", error);
+        throw error;
+    }
+};
+
+export const updateUserStatus = async (id: string, status: string, role: string) => {
+    try {
+        const response = await api.patch(`/user/${id}/status`, { status, role });
+        return response.data;
+    } catch (error) {
+        console.error("Error updating user status:", error);
+        throw error;
+    }
+};
+
+export const deleteUserAccount = async (id: string) => {
+    try {
+        const response = await api.delete(`/user/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        throw error;
+    }
+};
+
+export const createUserAdmin = async (userData: { name: string, email: string, phone: string, role?: string, status?: string }) => {
+    try {
+        const response = await api.post('/user/create', userData);
+        return response.data;
+    } catch (error: any) {
+        console.error("Error creating user:", error);
+        throw error.response?.data?.message || "Error creating user";
+    }
+};
+
 export const getCaseAnalysis = async (id: string) => {
     try {
         const response = await api.get(`/cases/${id}/analysis`);
@@ -185,10 +311,20 @@ export const getCaseAnalysis = async (id: string) => {
 
 export const queryAI = async (query: string, caseId?: string) => {
     try {
-        const response = await api.post('/cases/chat', { query, caseId });
+        const response = await api.post('/ai/query', { query, caseId });
         return response.data;
     } catch (error) {
         console.error("Error querying AI:", error);
+        throw error;
+    }
+};
+
+export const getAIInsights = async (caseId: string) => {
+    try {
+        const response = await api.get(`/ai/insights/${caseId}`);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching AI insights:", error);
         throw error;
     }
 };

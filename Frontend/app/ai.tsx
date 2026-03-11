@@ -64,29 +64,36 @@ export default function CaseAIScreen() {
             try {
                 setIsAnalyzing(true);
                 const data = await getCaseAnalysis(caseId as string);
+
+                // Map backend keys to frontend structure
+                const summary = data.probability_assessment || data.summary || "Analysis pending...";
+                const risks = Array.isArray(data.evidentiary_risks) ? data.evidentiary_risks.join('\n• ') : (data.evidentiary_risks || data.risks || "None identified.");
+                const actions = Array.isArray(data.tactical_insights) ? data.tactical_insights.join('\n• ') : (data.tactical_insights || data.actions || "No immediate actions.");
+                const precedents = data.precedents_analysis || data.precedents || "No relevant precedents found.";
+
                 setSections([
                     {
                         title: "Case Intelligence Summary",
                         icon: "document-text",
-                        content: data.summary,
+                        content: summary,
                         color: "#4F46E5"
                     },
                     {
                         title: "Evidence & Audit Risks",
                         icon: "warning",
-                        content: data.risks,
+                        content: `• ${risks}`,
                         color: "#F59E0B"
                     },
                     {
                         title: "Strategic Action Plan",
                         icon: "bulb",
-                        content: data.actions,
+                        content: `• ${actions}`,
                         color: "#10B981"
                     },
                     {
                         title: "Relevant Case Citations",
                         icon: "bookmark",
-                        content: data.precedents,
+                        content: precedents,
                         color: "#EC4899"
                     }
                 ]);
@@ -106,7 +113,7 @@ export default function CaseAIScreen() {
             role: 'ai',
             text: isGlobal
                 ? "Welcome to the Global Legal Assistant. I can help with general law queries, drafting templates, or looking up universal precedents. How can I assist you today?"
-                : `Active Intelligence mapping for ${client}'s case is ready. I've scanned the document Audit Timeline. What's our next move?`,
+                : `Active Intelligence mapping for ${client || "undefined"}'s case is ready. I've scanned the document Audit Timeline. What's our next move?`,
             timestamp: new Date()
         }
     ]);
@@ -123,16 +130,16 @@ export default function CaseAIScreen() {
             const aiMsg = {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
-                text: response.answer,
+                text: response.response,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, aiMsg]);
-        } catch (err) {
+        } catch (err: any) {
             console.error("AI Chat Error:", err);
             const errorMsg = {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
-                text: "I'm having trouble connecting to the intelligence engine. Please try again.",
+                text: `I'm having trouble connecting to the intelligence engine. Error: ${err.message || "Unknown Network Error"}`,
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMsg]);
@@ -194,8 +201,12 @@ export default function CaseAIScreen() {
                     ) : (
                         <>
                             <View style={styles.analysisHeader}>
-                                <Text style={[styles.analysisTitle, { color: colors.text }]}>Strategic Briefing</Text>
-                                <Text style={[styles.analysisSub, { color: colors.textSecondary }]}>{client || "Rakesh Sharma"} • Property Dispute</Text>
+                                <Text style={[styles.analysisTitle, { color: colors.text }]}>
+                                    {isGlobal ? "Global Intelligence" : "Strategic Briefing"}
+                                </Text>
+                                <Text style={[styles.analysisSub, { color: colors.textSecondary }]}>
+                                    {isGlobal ? "Query Legal Precedents & Regulations" : `${client || "Client Matter"} • Case specific strategy`}
+                                </Text>
                             </View>
 
                             {sections.map((sec, idx) => (
@@ -213,13 +224,15 @@ export default function CaseAIScreen() {
                             <TouchableOpacity
                                 onPress={() => {
                                     setActiveTab('chat');
-                                    setInput("Draft the Commission Application for property survey as identified in the risk analysis.");
+                                    setInput(isGlobal ? "Explain the latest amendments to the Indian Penal Code." : "Draft the Commission Application for property survey as identified in the risk analysis.");
                                 }}
                                 style={[styles.draftCard, { backgroundColor: colors.primary }]}
                             >
                                 <View style={styles.draftContent}>
-                                    <Text style={styles.draftTitle}>Need a Legal Draft?</Text>
-                                    <Text style={styles.draftSub}>I can generate the Commission Application based on identified risks.</Text>
+                                    <Text style={styles.draftTitle}>Need assistance?</Text>
+                                    <Text style={styles.draftSub}>
+                                        {isGlobal ? "Start typing to search global case laws or statutes." : "I can generate the Commission Application based on identified risks."}
+                                    </Text>
                                 </View>
                                 <View style={styles.draftIcon}>
                                     <Ionicons name="flash" size={24} color="#FFF" />

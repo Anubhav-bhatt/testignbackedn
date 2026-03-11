@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { getFileUrl } from "../api";
 import { useTheme } from "../app/context/ThemeContext";
 
 interface Props {
@@ -9,6 +11,7 @@ interface Props {
   onUploadImage: () => void;
   onPersonalDetails: () => void;
   onLogout: () => void;
+  uploading?: boolean;
 }
 
 export default function ProfileSidebar({
@@ -18,6 +21,7 @@ export default function ProfileSidebar({
   onUploadImage,
   onPersonalDetails,
   onLogout,
+  uploading = false,
 }: Props) {
   const { colors, theme } = useTheme();
   if (!visible) return null;
@@ -27,9 +31,21 @@ export default function ProfileSidebar({
       <View style={[styles.sidebar, { backgroundColor: theme === 'dark' ? '#1E293B' : '#FFFFFF' }]}>
         {/* ================= PROFILE ================= */}
         <View style={styles.profileBlock}>
-          <Pressable style={styles.avatarWrapper} onPress={onUploadImage}>
-            {profile?.avatar ? (
-              <Image source={{ uri: profile.avatar }} style={styles.avatar} />
+          <Pressable 
+            style={styles.avatarWrapper} 
+            onPress={onUploadImage}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <View style={[styles.avatar, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : profile?.selfie_url || profile?.avatar ? (
+              <Image 
+                source={{ uri: profile.selfie_url ? getFileUrl(profile.selfie_url) : profile.avatar }} 
+                style={styles.avatar} 
+                resizeMode="cover"
+              />
             ) : (
               <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
                 <Text style={styles.avatarText}>{profile?.name ? profile.name[0] : 'A'}</Text>
@@ -74,10 +90,30 @@ export default function ProfileSidebar({
           <Item
             icon="shield-checkmark-outline"
             label="Security & Bar ID"
-            onPress={() => { }}
+            onPress={() => {
+              onClose();
+              router.push("/profile/security");
+            }}
             textColor={colors.text}
           />
         </Section>
+
+        {profile?.role === 'admin' && (
+          <>
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <Section title="Admin Controls" color={colors.textSecondary}>
+              <Item
+                icon="people-outline"
+                label="User Management"
+                onPress={() => {
+                  onClose();
+                  router.push("/admin/users");
+                }}
+                textColor={colors.text}
+              />
+            </Section>
+          </>
+        )}
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
