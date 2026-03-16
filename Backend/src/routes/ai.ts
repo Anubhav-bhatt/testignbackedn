@@ -1,6 +1,6 @@
 import express from 'express';
-import { getCaseInsights } from '../../../AI/engine/insights';
 import { generateLegalResponse } from '../services/aiService';
+import { getCaseInsights } from '../services/insightsService';
 
 const router = express.Router();
 

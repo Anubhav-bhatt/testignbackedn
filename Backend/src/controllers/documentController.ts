@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import fs from "fs";
 import multer from "multer";
 import path from "path";
-import { processDocument } from "../../../AI/engine/ingestion";
 import { query } from "../db";
 
 // Configure Multer
@@ -60,13 +59,10 @@ export const uploadDocument = async (req: Request, res: Response) => {
             createdAt: newDoc.created_at
         });
 
-        // Phase: AI Ingestion (Async)
+        // AI ingestion is skipped in deploy-safe mode.
+        // This keeps uploads working even when external AI modules are not bundled.
         if (finalCaseId) {
-            processDocument(
-                req.file.path,
-                finalCaseId,
-                newDoc.id
-            ).catch((err: any) => console.error("AI Ingestion Background Error:", err));
+            console.log(`[AI] Skipping background ingestion for document ${newDoc.id}`);
         }
     } catch (error) {
         console.error("Error uploading document:", error);

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { getCaseInsights } from "../../../AI/engine/insights";
 import { query } from "../db";
 import { generateLegalResponse } from "../services/aiService";
+import { getCaseInsights } from "../services/insightsService";
 
 export const getCases = async (req: Request, res: Response) => {
     try {
