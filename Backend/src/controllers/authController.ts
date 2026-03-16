@@ -71,6 +71,7 @@ export const login = async (req: Request, res: Response) => {
 
 export const sendOtp = async (req: Request, res: Response) => {
     const { phone, checkExists } = req.body;
+    console.log(`📩 OTP Request received for phone: ${phone}`);
 
     if (!phone) {
         res.status(400).json({ error: "Phone number is required" });
@@ -92,7 +93,12 @@ export const sendOtp = async (req: Request, res: Response) => {
     }
 
     const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(`\n=========================================\n🔑 SERVER OTP LOG: Your OTP for ${phone} is: ${generatedOtp}\n=========================================\n`);
+    
+    console.log("\n" + "=".repeat(50));
+    console.log(`🚀 [AUTH] SENDING OTP`);
+    console.log(`📱 Phone: ${phone}`);
+    console.log(`🔑 OTP: ${generatedOtp}`);
+    console.log("=".repeat(50) + "\n");
 
     res.status(200).json({ message: "OTP sent successfully", otp: generatedOtp });
 };

@@ -1,6 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─────────────────────────────────────────────────────────────
 // 🚀 PRODUCTION: When your backend is deployed (Railway/Render),
@@ -11,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 🏠 LOCAL DEV: Update this IP to match your Mac's current WiFi IP.
 //    Run: ipconfig getifaddr en0   (on your Mac terminal)
-const LOCAL_BACKEND_URL = 'http://192.168.6.76:3000';
+const LOCAL_BACKEND_URL = 'http://192.168.6.30:3000';
 
 const BASE_URL = Platform.select({
     web: 'http://localhost:3000',
@@ -63,6 +63,7 @@ export const login = async (data: { phone: string }) => {
 export const sendOtp = async (data: { phone: string, checkExists?: boolean }) => {
     try {
         const response = await api.post('/auth/send-otp', data);
+        console.log(`OTP for ${data.phone}: ${response.data?.otp}`);
         return response.data;
     } catch (error: any) {
         throw error.response?.data?.error || "Error sending OTP";
