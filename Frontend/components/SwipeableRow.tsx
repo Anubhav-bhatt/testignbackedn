@@ -7,9 +7,10 @@ interface SwipeableRowProps {
     children: React.ReactNode;
     onDelete?: () => void;
     onEdit?: () => void;
+    onCloseCase?: () => void;
 }
 
-export default function SwipeableRow({ children, onDelete, onEdit }: SwipeableRowProps) {
+export default function SwipeableRow({ children, onDelete, onEdit, onCloseCase }: SwipeableRowProps) {
     const swipeableRow = useRef<Swipeable>(null);
 
     const close = () => {
@@ -49,12 +50,20 @@ export default function SwipeableRow({ children, onDelete, onEdit }: SwipeableRo
     const renderRightActions = (
         progress: Animated.AnimatedInterpolation<number>,
         _dragAnimatedValue: Animated.AnimatedInterpolation<number>
-    ) => (
-        <View style={{ width: 140, flexDirection: 'row' }}>
-            {renderRightAction('Edit', '#3b82f6', 140, progress, 'pencil', onEdit)}
-            {renderRightAction('Delete', '#ef4444', 70, progress, 'trash', onDelete)}
-        </View>
-    );
+    ) => {
+        let width = 0;
+        if (onDelete) width += 70;
+        if (onEdit) width += 70;
+        if (onCloseCase) width += 70;
+
+        return (
+            <View style={{ width, flexDirection: 'row' }}>
+                {onCloseCase && renderRightAction('Close', '#10B981', width, progress, 'checkmark-circle-outline', onCloseCase)}
+                {onEdit && renderRightAction('Edit', '#3b82f6', width - (onCloseCase ? 70 : 0), progress, 'pencil', onEdit)}
+                {onDelete && renderRightAction('Delete', '#ef4444', 70, progress, 'trash', onDelete)}
+            </View>
+        );
+    };
 
     return (
         <Swipeable

@@ -10,6 +10,9 @@ import {
     Text,
     TextInput,
     TouchableWithoutFeedback,
+    KeyboardAvoidingView,
+    ScrollView,
+    Platform,
     View,
 } from "react-native";
 
@@ -35,8 +38,15 @@ export default function Signup() {
     };
 
     return (
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <View style={styles.container}>
+        <KeyboardAvoidingView 
+            style={{ flex: 1, backgroundColor: "#0B1C2D" }}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+            <ScrollView 
+                contentContainerStyle={styles.container}
+                keyboardShouldPersistTaps="handled"
+                bounces={false}
+            >
                 <StatusBar barStyle="light-content" />
 
                 {/* Branding */}
@@ -99,17 +109,18 @@ export default function Signup() {
                         Secure OTP authentication • No password required
                     </Text>
                 </View>
-            </View>
-        </TouchableWithoutFeedback>
+            </ScrollView>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         backgroundColor: "#0B1C2D",
         paddingHorizontal: 24,
         justifyContent: "center",
+        paddingVertical: 40,
     },
     header: {
         alignItems: "center",

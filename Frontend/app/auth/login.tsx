@@ -10,6 +10,8 @@ import {
   Text,
   TextInput,
   TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  ScrollView,
   View,
   Platform,
   Modal,
@@ -57,8 +59,15 @@ export default function Login() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: "#0B1C2D" }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
         <StatusBar barStyle="light-content" />
 
         {/* Error Modal */}
@@ -141,14 +150,14 @@ export default function Login() {
             Secure OTP authentication • No password required
           </Text>
         </View>
-      </View>
-    </TouchableWithoutFeedback>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: "#0B1C2D", // Dark blue professional
     paddingHorizontal: 24,
     justifyContent: "center",

@@ -6,7 +6,7 @@ import { useCallback, useState } from "react";
 import { Alert, FlatList, Image, Modal, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { getCases, getProfile, updateProfile, uploadDocument } from "../api";
+import { getCases, getProfile, updateProfile, uploadDocument, closeCase } from "../api";
 import HeaderSection from "../components/HeaderSection";
 import ProfileSidebar from "../components/ProfileSidebar";
 import SwipeableRow from "../components/SwipeableRow";
@@ -90,9 +90,10 @@ export default function Dashboard() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'hearings'>('all');
 
   const todayStr = "10 Feb, 2026";
-  const hearingsToday = cases.filter(c => c.nextHearing === todayStr);
+  const activeCases = cases.filter(c => c.status !== "Closed");
+  const hearingsToday = activeCases.filter(c => c.nextHearing === todayStr);
 
-  const filteredCases = cases.filter(c => {
+  const filteredCases = activeCases.filter(c => {
     const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.caseId.toLowerCase().includes(searchQuery.toLowerCase());
@@ -103,12 +104,27 @@ export default function Dashboard() {
     return matchesSearch;
   });
 
-  const handleDelete = (id: number) => {
-    setCases(prev => prev.filter(c => c.id !== id));
-  };
-
-  const handleEdit = (id: number) => {
-    console.log("Edit case", id);
+  const handleCloseCase = async (id: number) => {
+    Alert.alert(
+      "Close Case",
+      "Are you sure you want to mark this case as closed?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Close Case", 
+          style: "destructive",
+          onPress: async () => {
+             try {
+               await closeCase(id.toString());
+               fetchData();
+             } catch (error) {
+               console.error(error);
+               Alert.alert("Error", "Failed to close the case");
+             }
+          }
+        }
+      ]
+    );
   };
 
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -224,7 +240,7 @@ export default function Dashboard() {
             <View style={styles.statsContainer}>
               <StatCard
                 title="Active Matters"
-                value={cases.length}
+                value={activeCases.length}
                 icon="briefcase"
                 color="#4F46E5"
                 onPress={() => setActiveFilter('all')}
@@ -238,7 +254,7 @@ export default function Dashboard() {
               />
               <StatCard
                 title="Total Clients"
-                value={String(new Set(cases.map(c => c.clientName)).size).padStart(2, '0')}
+                value={String(new Set(activeCases.map(c => c.clientName)).size).padStart(2, '0')}
                 icon="people"
                 color="#10B981"
                 onPress={() => router.push("/clients")}
@@ -267,8 +283,7 @@ export default function Dashboard() {
             shadowOpacity: theme === 'dark' ? 0.3 : 0.08,
           }]}>
             <SwipeableRow
-              onDelete={() => handleDelete(item.id)}
-              onEdit={() => handleEdit(item.id)}
+              onCloseCase={() => handleCloseCase(item.id)}
             >
               <Pressable
                 style={[

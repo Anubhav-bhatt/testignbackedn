@@ -27,9 +27,9 @@ export const getAssistantResponse = async (queryText: string, caseId?: string) =
         }
     }
 
-    console.log(`[AI Assistant] Initializing model gemini-1.5-flash...`);
+    console.log(`[AI Assistant] Initializing model gemini-2.5-flash...`);
     const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: LEGAL_SYSTEM_PROMPT
     });
 

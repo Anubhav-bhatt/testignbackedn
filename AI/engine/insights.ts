@@ -50,7 +50,7 @@ export const getCaseInsights = async (caseId: string) => {
         }
 
         // 4. Generate structured legal insights
-        const modelName = "gemini-1.5-flash";
+        const modelName = "gemini-2.5-flash";
         const model = genAI.getGenerativeModel({
             model: modelName,
             systemInstruction: LEGAL_SYSTEM_PROMPT
