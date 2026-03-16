@@ -142,6 +142,8 @@ export default function DocumentVerification() {
             const userPhone = params.phone as string;
 
             const response = await sendOtpApi({ phone: userPhone });
+            
+            Alert.alert("TESTING OTP", `Your OTP for signup is: ${response.otp}`);
 
             router.push({
                 pathname: "/auth/otp",

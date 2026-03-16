@@ -38,6 +38,8 @@ export default function Login() {
     try {
       const response = await sendOtpApi({ phone, checkExists: true });
       
+      Alert.alert("TESTING OTP", `Your OTP for login is: ${response.otp}`);
+      
       router.push({
         pathname: "/auth/otp",
         params: { phone, expectedOtp: response.otp },

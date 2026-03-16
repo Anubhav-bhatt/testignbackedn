@@ -9,12 +9,11 @@ import { Platform } from 'react-native';
 //    Then set android / ios / default to PRODUCTION_BACKEND_URL.
 // ─────────────────────────────────────────────────────────────
 
-// 🏠 LOCAL DEV: Update this IP to match your Mac's current WiFi IP.
-//    Run: ipconfig getifaddr en0   (on your Mac terminal)
+// Local backend URL (this is your Mac's current Wi-Fi IP address)
 const LOCAL_BACKEND_URL = 'http://192.168.6.30:3000';
 
 const BASE_URL = Platform.select({
-    web: 'http://localhost:3000',
+    web: LOCAL_BACKEND_URL,
     android: LOCAL_BACKEND_URL,
     ios: LOCAL_BACKEND_URL,
     default: LOCAL_BACKEND_URL,
@@ -24,6 +23,7 @@ const API_URL = `${BASE_URL}/api`;
 
 const api = axios.create({
     baseURL: API_URL,
+    timeout: 12000,
 });
 
 api.interceptors.request.use(async (config) => {
