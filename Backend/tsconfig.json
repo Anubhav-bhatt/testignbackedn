@@ -11,12 +11,14 @@
     "resolveJsonModule": true
   },
   "include": [
-    "src/**/*",
-    "../AI/**/*"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "../AI/node_modules"
+    "src/test*.ts",
+    "src/test_*.ts",
+    "src/indexExisting.ts",
+    "src/runIngestDb.ts"
   ]
 }
