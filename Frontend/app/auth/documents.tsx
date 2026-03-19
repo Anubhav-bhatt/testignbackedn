@@ -14,7 +14,7 @@ import {
     Text,
     View,
 } from "react-native";
-import { uploadDocument, sendOtp as sendOtpApi } from "../../api";
+import { sendOtp as sendOtpApi, uploadDocument } from "../../api";
 
 type DocumentItem = {
     id: string;
@@ -142,12 +142,13 @@ export default function DocumentVerification() {
             const userPhone = params.phone as string;
 
             const response = await sendOtpApi({ phone: userPhone });
-            
-            Alert.alert("TESTING OTP", `Your OTP for signup is: ${response.otp}`);
+            if (response.debugOtp) {
+                Alert.alert("Debug OTP", `Your OTP for signup is: ${response.debugOtp}`);
+            }
 
             router.push({
                 pathname: "/auth/otp",
-                params: { ...params, verifiying_docs: "true", uploadedDocIds: JSON.stringify(docIds), expectedOtp: response.otp },
+                params: { ...params, verifiying_docs: "true", uploadedDocIds: JSON.stringify(docIds) },
             });
         } catch (e: any) {
             Alert.alert("Error", e.toString());

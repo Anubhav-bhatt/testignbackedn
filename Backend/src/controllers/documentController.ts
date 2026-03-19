@@ -3,6 +3,7 @@ import fs from "fs";
 import multer from "multer";
 import path from "path";
 import { query } from "../db";
+import { deleteDocumentEmbeddings, indexDocument } from "../services/ragService";
 
 // Configure Multer
 const storage = multer.diskStorage({
@@ -59,10 +60,23 @@ export const uploadDocument = async (req: Request, res: Response) => {
             createdAt: newDoc.created_at
         });
 
-        // AI ingestion is skipped in deploy-safe mode.
-        // This keeps uploads working even when external AI modules are not bundled.
         if (finalCaseId) {
-            console.log(`[AI] Skipping background ingestion for document ${newDoc.id}`);
+            const storedFilePath = path.join(__dirname, "../../uploads", newDoc.filename);
+            void indexDocument({
+                caseId: finalCaseId,
+                documentId: newDoc.id,
+                filePath: storedFilePath,
+                originalName: newDoc.original_name,
+                metadata: {
+                    mimeType: newDoc.mime_type,
+                    docType: newDoc.doc_type,
+                    uploadedAt: newDoc.created_at,
+                },
+            }).then((chunkCount) => {
+                console.log(`[AI] Indexed document ${newDoc.id} into ${chunkCount} chunks`);
+            }).catch((indexError) => {
+                console.error(`[AI] Failed to index uploaded document ${newDoc.id}:`, indexError);
+            });
         }
     } catch (error) {
         console.error("Error uploading document:", error);
@@ -104,7 +118,7 @@ export const getDocuments = async (req: Request, res: Response) => {
 };
 
 export const deleteDocument = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
     try {
         const { rows } = await query('SELECT * FROM documents WHERE id = $1', [id]);
         if (rows.length === 0) {
@@ -121,6 +135,7 @@ export const deleteDocument = async (req: Request, res: Response) => {
         }
 
         // Delete from DB and optionally vectors (since this is AI powered)
+    await deleteDocumentEmbeddings(id);
         await query('DELETE FROM documents WHERE id = $1', [id]);
 
         res.json({ message: "Document deleted successfully" });

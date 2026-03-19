@@ -6,7 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.ts",
     "build": "tsc",
-    "start": "node dist/Backend/src/index.js"
+    "start": "node dist/Backend/src/index.js",
+    "reindex:documents": "ts-node src/reindexDocuments.ts",
+    "ingest:ai-data": "ts-node src/ingestAIData.ts"
   },
   "engines": {
     "node": ">=20.0.0"

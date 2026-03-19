@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { query } from "../db";
+import { deleteNoteEmbeddings, indexNoteEmbedding } from "../services/ragService";
 
 export const getNotes = async (req: Request, res: Response) => {
     const { caseId } = req.query;
@@ -48,6 +49,11 @@ export const createNote = async (req: Request, res: Response) => {
             caseId: newNote.case_id,
             createdAt: newNote.created_at
         });
+
+        // Embed the note into the vector DB for RAG retrieval
+        void indexNoteEmbedding(newNote.id, caseId, content)
+            .then((chunkCount: number) => console.log(`[AI] Indexed note ${newNote.id} into ${chunkCount} chunks`))
+            .catch((err: Error) => console.error(`[AI] Failed to index note ${newNote.id}:`, err));
     } catch (error) {
         console.error("Error creating note:", error);
         res.status(500).json({ message: "Internal Server Error" });
@@ -55,8 +61,9 @@ export const createNote = async (req: Request, res: Response) => {
 };
 
 export const deleteNote = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    const id = req.params.id as string;
     try {
+        await deleteNoteEmbeddings(id);
         await query('DELETE FROM notes WHERE id = $1', [id]);
         res.status(204).send();
     } catch (error) {

@@ -15,7 +15,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { getCaseAnalysis, queryAI } from "../api";
+import { getCaseAnalysis, queryAI, type AiSource } from "../api";
 import { useTheme } from "./context/ThemeContext";
 
 type AnalysisSection = {
@@ -107,7 +107,7 @@ export default function CaseAIScreen() {
     }, [caseId, isGlobal]);
 
     const [input, setInput] = useState("");
-    const [messages, setMessages] = useState<any[]>([
+    const [messages, setMessages] = useState<{ id: string; role: 'ai' | 'user'; text: string; timestamp: Date; sources?: AiSource[] }[]>([
         {
             id: '1',
             role: 'ai',
@@ -131,7 +131,8 @@ export default function CaseAIScreen() {
                 id: (Date.now() + 1).toString(),
                 role: 'ai',
                 text: response.response,
-                timestamp: new Date()
+                timestamp: new Date(),
+                sources: response.sources,
             };
             setMessages(prev => [...prev, aiMsg]);
         } catch (err: any) {
@@ -252,6 +253,20 @@ export default function CaseAIScreen() {
                             <View key={msg.id} style={[styles.msgRow, msg.role === 'user' ? styles.userRow : styles.aiRow]}>
                                 <View style={[styles.bubble, msg.role === 'user' ? [styles.userBubble, { backgroundColor: colors.primary }] : [styles.aiBubble, { backgroundColor: theme === 'dark' ? colors.surface : '#FFF', borderColor: colors.border }]]}>
                                     <Text style={[styles.msgText, { color: msg.role === 'user' ? '#FFF' : colors.text }]}>{msg.text}</Text>
+                                    {msg.role === 'ai' && msg.sources && msg.sources.length > 0 && (
+                                        <View style={styles.sourceList}>
+                                            <Text style={[styles.sourceHeading, { color: colors.textSecondary }]}>Sources used</Text>
+                                            {msg.sources.map((source, index) => (
+                                                <View key={`${msg.id}-${source.label}-${index}`} style={[styles.sourceCard, { borderColor: colors.border, backgroundColor: theme === 'dark' ? colors.background : '#F8FAFC' }]}>
+                                                    <View style={styles.sourceHeader}>
+                                                        <Text style={[styles.sourceLabel, { color: colors.text }]} numberOfLines={1}>{source.label}</Text>
+                                                        <Text style={[styles.sourceScore, { color: colors.primary }]}>{Math.round(source.similarity * 100)}%</Text>
+                                                    </View>
+                                                    <Text style={[styles.sourceExcerpt, { color: colors.textSecondary }]}>{source.excerpt}</Text>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    )}
                                 </View>
                             </View>
                         ))}
@@ -316,6 +331,13 @@ const styles = StyleSheet.create({
     userBubble: { borderBottomRightRadius: 4 },
     aiBubble: { borderBottomLeftRadius: 4, borderWidth: 1 },
     msgText: { fontSize: 15, lineHeight: 22 },
+    sourceList: { marginTop: 14, gap: 8 },
+    sourceHeading: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+    sourceCard: { borderWidth: 1, borderRadius: 14, padding: 10 },
+    sourceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, gap: 8 },
+    sourceLabel: { fontSize: 12, fontWeight: '700', flex: 1 },
+    sourceScore: { fontSize: 12, fontWeight: '800' },
+    sourceExcerpt: { fontSize: 12, lineHeight: 17 },
 
     inputContainer: { flexDirection: 'row', padding: 16, borderTopWidth: 1, gap: 12, alignItems: 'center', marginBottom: 100 },
     input: { flex: 1, height: 48, borderRadius: 24, paddingHorizontal: 16, fontSize: 14 },

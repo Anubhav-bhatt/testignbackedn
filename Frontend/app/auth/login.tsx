@@ -2,19 +2,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Keyboard,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  ScrollView,
-  View,
-  Platform,
-  Modal,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
 } from "react-native";
 
 import { sendOtp as sendOtpApi } from "../../api";
@@ -37,12 +35,13 @@ export default function Login() {
 
     try {
       const response = await sendOtpApi({ phone, checkExists: true });
-      
-      Alert.alert("TESTING OTP", `Your OTP for login is: ${response.otp}`);
+      if (response.debugOtp) {
+        Alert.alert("Debug OTP", `Your OTP for login is: ${response.debugOtp}`);
+      }
       
       router.push({
         pathname: "/auth/otp",
-        params: { phone, expectedOtp: response.otp },
+        params: { phone },
       });
     } catch (e: any) {
       console.log("Login error caught:", e);

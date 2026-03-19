@@ -3,51 +3,38 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  Keyboard,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableWithoutFeedback,
-  KeyboardAvoidingView,
-  ScrollView,
-  Platform,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
-import { login, signup } from "../../api"; // Added API imports
+import { login, sendOtp as sendOtpApi, signup, verifyOtp as verifyOtpApi } from "../../api";
 
 export default function Otp() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ phone?: string, name?: string, email?: string, role?: string, verifiying_docs?: string, uploadedDocIds?: string, expectedOtp?: string }>();
+  const params = useLocalSearchParams<{ phone?: string, name?: string, email?: string, role?: string, verifiying_docs?: string, uploadedDocIds?: string }>();
   const phone = params.phone || "";
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const verifyOtp = async () => {
-    // 🔐 MOCK OTP Check first
     const inputOtp = otp.trim();
-    
-    // Ensure we take the first value if it's an array
-    const rawExpected = params.expectedOtp;
-    const correctOtp = (Array.isArray(rawExpected) ? rawExpected[0] : rawExpected) || "123456";
-    
-    console.log(`Verifying OTP: Input="${inputOtp}", Expected="${correctOtp}"`);
-
-    // Master OTP for development
-    if (inputOtp === "111111") {
-      console.log("Master OTP used");
-    } else if (inputOtp !== correctOtp) {
-      return Alert.alert(
-        "Invalid OTP", 
-        `The OTP you entered is incorrect. \n\nDebug Info: Your device received "${correctOtp}".\nConsole Tip: Check the backend terminal log.`
-      );
+    if (inputOtp.length !== 6) {
+      return Alert.alert("Invalid OTP", "Please enter the 6-digit OTP sent to your phone.");
     }
 
     try {
       setLoading(true);
+      await verifyOtpApi({ phone, otp: inputOtp });
+
       const isSignupFlow = params.name && params.email && params.verifiying_docs;
 
       let authResult;
@@ -88,6 +75,22 @@ export default function Otp() {
       Alert.alert("Authentication Failed", typeof e === 'string' ? e : "An error occurred during verification");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendOtp = async () => {
+    try {
+      setResending(true);
+      const response = await sendOtpApi({ phone, checkExists: !(params.name && params.email && params.verifiying_docs) });
+      if (response.debugOtp) {
+        Alert.alert("Debug OTP", `Your new OTP is: ${response.debugOtp}`);
+      } else {
+        Alert.alert("OTP Sent", "A fresh OTP has been sent to your phone.");
+      }
+    } catch (error: any) {
+      Alert.alert("Resend Failed", typeof error === 'string' ? error : "Could not resend OTP.");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -134,21 +137,6 @@ export default function Otp() {
             onChangeText={setOtp}
             textAlign="center"
           />
-
-          {/* Debug Tool for Testing */}
-          <Pressable 
-            style={{ marginBottom: 16, alignSelf: 'center' }}
-            onPress={() => {
-              const rawExpected = params.expectedOtp;
-              const correct = (Array.isArray(rawExpected) ? rawExpected[0] : rawExpected) || "123456";
-              setOtp(correct);
-            }}
-          >
-            <Text style={{ color: '#1D4ED8', fontSize: 12, fontWeight: '600' }}>
-              [Debug] Fill Received OTP
-            </Text>
-          </Pressable>
-
           <Pressable
             style={[styles.button, loading && { opacity: 0.7 }]}
             onPress={verifyOtp}
@@ -157,9 +145,11 @@ export default function Otp() {
             <Text style={styles.buttonText}>{loading ? "Verifying..." : "Verify & Continue"}</Text>
           </Pressable>
 
-          <Text style={styles.footer}>
-            Didn’t receive OTP? Resend in 30s
-          </Text>
+          <Pressable onPress={resendOtp} disabled={resending} style={styles.resendBtn}>
+            <Text style={styles.resendText}>{resending ? "Resending..." : "Didn’t receive OTP? Resend"}</Text>
+          </Pressable>
+
+          <Text style={styles.footer}>OTP is valid for 5 minutes.</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -232,5 +222,14 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#9CA3AF",
     textAlign: "center",
+  },
+  resendBtn: {
+    marginTop: 14,
+    alignItems: 'center',
+  },
+  resendText: {
+    color: '#1D4ED8',
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

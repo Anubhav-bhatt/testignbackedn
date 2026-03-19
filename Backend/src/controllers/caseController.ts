@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
+import path from "path";
 import { query } from "../db";
 import { generateLegalResponse } from "../services/aiService";
 import { getCaseInsights } from "../services/insightsService";
+import { indexDocument } from "../services/ragService";
 
 export const getCases = async (req: Request, res: Response) => {
     try {
@@ -96,15 +98,21 @@ export const createCase = async (req: Request, res: Response) => {
 
         const newCase = rows[0];
 
+        const linkedDocuments: Array<{ id: string; filename: string; original_name: string; mime_type: string; doc_type: string }> = [];
+
         // Link uploaded intake documents to this case
         if (documents) {
             for (const key of Object.keys(documents)) {
                 const doc = documents[key];
                 if (doc.filename) {
-                    await query(
-                        'UPDATE documents SET case_id = $1, doc_type = $2 WHERE filename = $3',
+                    const linkedRes = await query(
+                        'UPDATE documents SET case_id = $1, doc_type = $2 WHERE filename = $3 RETURNING id, filename, original_name, mime_type, doc_type',
                         [newCase.id, key, doc.filename]
                     );
+
+                    if (linkedRes.rows[0]) {
+                        linkedDocuments.push(linkedRes.rows[0]);
+                    }
                 }
             }
         }
@@ -124,6 +132,27 @@ export const createCase = async (req: Request, res: Response) => {
             lawyerId: newCase.lawyer_id,
             totalFixedAmount: newCase.total_fixed_amount
         });
+
+        if (linkedDocuments.length > 0) {
+            for (const linkedDocument of linkedDocuments) {
+                const filePath = path.join(__dirname, "../../uploads", linkedDocument.filename);
+                void indexDocument({
+                    caseId: newCase.id,
+                    documentId: linkedDocument.id,
+                    filePath,
+                    originalName: linkedDocument.original_name,
+                    metadata: {
+                        mimeType: linkedDocument.mime_type,
+                        docType: linkedDocument.doc_type,
+                        source: 'case-intake-link',
+                    },
+                }).then((chunkCount) => {
+                    console.log(`[AI] Indexed linked intake document ${linkedDocument.id} into ${chunkCount} chunks`);
+                }).catch((indexError) => {
+                    console.error(`[AI] Failed to index linked intake document ${linkedDocument.id}:`, indexError);
+                });
+            }
+        }
     } catch (error) {
         console.error("Error creating case:", error);
         res.status(500).json({ message: "Internal Server Error" });

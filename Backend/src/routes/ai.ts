@@ -1,6 +1,7 @@
 import express from 'express';
 import { generateLegalResponse } from '../services/aiService';
 import { getCaseInsights } from '../services/insightsService';
+import { buildSources, retrieveRelevantChunks } from '../services/ragService';
 
 const router = express.Router();
 
@@ -28,11 +29,27 @@ router.post('/query', async (req, res) => {
     try {
         const { query, caseId } = req.body;
         const response = await generateLegalResponse(query, caseId);
-        console.log('[API] Generated response length:', response?.length);
-        res.json({ response });
+        console.log('[API] Generated response length:', response.response?.length);
+        res.json(response);
         console.log('[API] Response sent.');
     } catch (err: any) {
         console.error('Error querying AI:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.post('/retrieve', async (req, res) => {
+    try {
+        const { query, caseId, limit } = req.body;
+        const retrieval = await retrieveRelevantChunks(query, caseId, Number(limit) || 5);
+        res.json({
+            scope: retrieval.scope,
+            chunkCount: retrieval.chunks.length,
+            totalCandidates: retrieval.totalCandidates,
+            sources: buildSources(retrieval.chunks),
+        });
+    } catch (err: any) {
+        console.error('Error retrieving AI context:', err);
         res.status(500).json({ error: err.message });
     }
 });

@@ -11,12 +11,13 @@ import { Platform } from 'react-native';
 
 // Local backend URL (this is your Mac's current Wi-Fi IP address)
 const LOCAL_BACKEND_URL = 'http://192.168.6.30:3000';
+const ENV_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const BASE_URL = Platform.select({
-    web: LOCAL_BACKEND_URL,
-    android: LOCAL_BACKEND_URL,
-    ios: LOCAL_BACKEND_URL,
-    default: LOCAL_BACKEND_URL,
+    web: ENV_BACKEND_URL || 'http://localhost:3000',
+    android: ENV_BACKEND_URL || LOCAL_BACKEND_URL,
+    ios: ENV_BACKEND_URL || LOCAL_BACKEND_URL,
+    default: ENV_BACKEND_URL || LOCAL_BACKEND_URL,
 });
 
 const API_URL = `${BASE_URL}/api`;
@@ -63,10 +64,27 @@ export const login = async (data: { phone: string }) => {
 export const sendOtp = async (data: { phone: string, checkExists?: boolean }) => {
     try {
         const response = await api.post('/auth/send-otp', data);
-        console.log(`OTP for ${data.phone}: ${response.data?.otp}`);
+        if (response.data?.debugOtp) {
+            console.warn(`[OTP DEBUG] phone=${data.phone} otp=${response.data.debugOtp}`);
+        }
         return response.data;
     } catch (error: any) {
+        if (!error?.response) {
+            throw "Cannot reach backend server. Check EXPO_PUBLIC_BACKEND_URL or LOCAL_BACKEND_URL in Frontend/api.ts";
+        }
         throw error.response?.data?.error || "Error sending OTP";
+    }
+};
+
+export const verifyOtp = async (data: { phone: string; otp: string }) => {
+    try {
+        const response = await api.post('/auth/verify-otp', data);
+        return response.data;
+    } catch (error: any) {
+        if (!error?.response) {
+            throw "Cannot reach backend server. Check EXPO_PUBLIC_BACKEND_URL or LOCAL_BACKEND_URL in Frontend/api.ts";
+        }
+        throw error.response?.data?.error || "Error verifying OTP";
     }
 };
 
@@ -302,7 +320,7 @@ export const createUserAdmin = async (userData: { name: string, email: string, p
 
 export const getCaseAnalysis = async (id: string) => {
     try {
-        const response = await api.get(`/cases/${id}/analysis`);
+        const response = await api.get(`/cases/${id}/analysis`, { timeout: 120000 });
         return response.data;
     } catch (error) {
         console.error("Error fetching case analysis:", error);
@@ -310,9 +328,26 @@ export const getCaseAnalysis = async (id: string) => {
     }
 };
 
+export type AiSource = {
+    label: string;
+    similarity: number;
+    excerpt: string;
+    documentId: string | null;
+};
+
+export type AiQueryResult = {
+    response: string;
+    sources: AiSource[];
+    retrieval?: {
+        scope: 'case' | 'global' | 'none';
+        chunkCount: number;
+        totalCandidates: number;
+    };
+};
+
 export const queryAI = async (query: string, caseId?: string) => {
     try {
-        const response = await api.post('/ai/query', { query, caseId });
+        const response = await api.post<AiQueryResult>('/ai/query', { query, caseId }, { timeout: 120000 });
         return response.data;
     } catch (error) {
         console.error("Error querying AI:", error);
@@ -320,9 +355,19 @@ export const queryAI = async (query: string, caseId?: string) => {
     }
 };
 
+export const inspectAIRetrieval = async (query: string, caseId?: string, limit?: number) => {
+    try {
+        const response = await api.post('/ai/retrieve', { query, caseId, limit });
+        return response.data;
+    } catch (error) {
+        console.error("Error retrieving AI context:", error);
+        throw error;
+    }
+};
+
 export const getAIInsights = async (caseId: string) => {
     try {
-        const response = await api.get(`/ai/insights/${caseId}`);
+        const response = await api.get(`/ai/insights/${caseId}`, { timeout: 120000 });
         return response.data;
     } catch (error) {
         console.error("Error fetching AI insights:", error);
